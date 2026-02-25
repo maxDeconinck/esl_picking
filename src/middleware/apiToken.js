@@ -1,4 +1,4 @@
-import ApiToken from "../models/ApiToken.js";
+import ApiToken from "../models/apiToken.js";
 
 /**
  * Middleware pour authentifier via API Token
