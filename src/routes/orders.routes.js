@@ -102,6 +102,9 @@ router.post("/:id/picking", async (req, res) => {
                 idData: line.fk_product + '-' + element.emplacement // Id utilisé dans le template pour afficher les bonnes infos
               });
 
+              // Faire clignoter l'étiquette pour attirer l'attention du préparateur
+              await Minew.blinkTag(element.mac, {total: 300, color: "blue"}); // Clignote pendant 5 minutes (60 secondes * 5)
+
               console.log('Tag updated for device:', element.mac, { result });
             } else {
               console.log('Stock location does not match device emplacement:', stock.warehouse_ref, element.emplacement);
