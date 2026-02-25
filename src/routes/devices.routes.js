@@ -1,0 +1,333 @@
+import express from "express";
+import Device from "../models/Device.js";
+import DolibarrAPI from "../services/DolibarrAPI.js";
+import MinewService from "../services/Minew.js";
+
+const router = express.Router();
+
+/**
+ * GET /devices
+ * Récupérer toutes les étiquettes avec leurs produits associés
+ */
+router.get("/", async (req, res) => {
+  try {
+    const devices = await Device.findAll();
+
+    // Enrichir chaque device avec les informations produit si fk_product est défini
+    const enrichedDevices = await Promise.all(
+      devices.map(async (device) => {
+        if (device.fk_product) {
+          try {
+            const product = await DolibarrAPI.getProduct(device.fk_product);
+            return {
+              ...device,
+              product: {
+                id: product.id,
+                ref: product.ref,
+                label: product.label,
+                url: `${process.env.DOLIBARR_URL}/product/card.php?id=${product.id}`
+              }
+            };
+          } catch (error) {
+            console.warn(`Failed to fetch product ${device.fk_product} for device ${device.id}:`, error.message);
+            return device;
+          }
+        }
+        return device;
+      })
+    );
+
+    res.json({
+      success: true,
+      devices: enrichedDevices
+    });
+  } catch (error) {
+    console.error("Error fetching devices:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * GET /devices/:id
+ * Récupérer une étiquette spécifique
+ */
+router.get("/:id", async (req, res) => {
+  try {
+    const deviceId = parseInt(req.params.id, 10);
+
+    const device = await Device.findById(deviceId);
+
+    if (!device) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    res.json({
+      success: true,
+      device: Device.format(device),
+    });
+  } catch (error) {
+    console.error("Error fetching device:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * POST /devices
+ * Créer une nouvelle étiquette
+ */
+router.post("/", async (req, res) => {
+  try {
+    const { name, mac, key, emplacement, fk_product } = req.body;
+
+    if (!mac || !key) {
+      return res.status(400).json({ error: "Device MAC and key are required" });
+    }
+
+    const deviceId = await Device.create({
+      name,
+      mac,
+      key,
+      emplacement,
+      fk_product
+    });
+
+    const device = await Device.findById(deviceId);
+
+    res.status(201).json({
+      success: true,
+      device: Device.format(device),
+    });
+  } catch (error) {
+    console.error("Error creating device:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * PUT /devices/:id
+ * Mettre à jour une étiquette existante
+ */
+router.put("/:id", async (req, res) => {
+  try {
+    const deviceId = parseInt(req.params.id, 10);
+    const { name, mac, key, emplacement, fk_product, mode } = req.body;
+
+    if (!deviceId) {
+      return res.status(400).json({ error: "Device ID is required" });
+    }
+
+    const updated = await Device.update(deviceId, {
+      name,
+      mac,
+      key,
+      emplacement,
+      fk_product,
+      mode
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    const device = await Device.findById(deviceId);
+
+    res.json({
+      success: true,
+      device: Device.format(device),
+    });
+  } catch (error) {
+    console.error("Error updating device:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * DELETE /devices/:id
+ * Supprimer une étiquette existante
+ */
+router.delete("/:id", async (req, res) => {
+  try {
+    const deviceId = parseInt(req.params.id, 10);
+
+    const deleted = await Device.delete(deviceId);
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Device deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting device:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * GET /devices/emplacement/:emplacement
+ * Récupérer une étiquette par son emplacement
+ */
+router.get("/emplacement/:emplacement", async (req, res) => {
+  try {
+    const { emplacement } = req.params;
+
+    const device = await Device.findByEmplacement(emplacement);
+
+    if (!device) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    res.json({
+      success: true,
+      device: Device.format(device),
+    });
+  } catch (error) {
+    console.error("Error fetching device by emplacement:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * GET /devices/mac/:mac
+ * Récupérer une étiquette par son adresse MAC
+ */
+router.get("/mac/:mac", async (req, res) => {
+  try {
+    const { mac } = req.params;
+
+    const device = await Device.findByMac(mac);
+
+    if (!device) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    res.json({
+      success: true,
+      device: Device.format(device),
+    });
+  } catch (error) {
+    console.error("Error fetching device by MAC:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * POST /devices/:id/blink
+ * Faire clignoter une étiquette pendant 10 secondes
+ */
+router.post("/:id/blink", async (req, res) => {
+  try {
+    const deviceId = parseInt(req.params.id, 10);
+    const device = await Device.findById(deviceId);
+
+    if (!device) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    if (!device.mac) {
+      return res.status(400).json({ error: "Device has no MAC address" });
+    }
+
+    // Faire clignoter l'étiquette pendant 30 secondes
+    const result = await MinewService.blinkTag(device.mac, {
+      total: 30,      // 30 clignotements
+      color: "red"
+    });
+
+    res.json({
+      success: true,
+      message: "Blink command sent successfully",
+      device: Device.format(device),
+      result: result
+    });
+  } catch (error) {
+    console.error("Error blinking device:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
+/**
+ * PATCH /devices/:id/detach
+ * Détacher une étiquette de son produit
+ */
+router.patch("/:id/detach", async (req, res) => {
+  try {
+    const deviceId = parseInt(req.params.id, 10);
+
+    const updated = await Device.update(deviceId, {
+      fk_product: null,
+      emplacement: null
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    const device = await Device.findById(deviceId);
+
+    res.json({
+      success: true,
+      message: "Device detached from product successfully",
+      device: Device.format(device),
+    });
+  } catch (error) {
+    console.error("Error detaching device:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/** 
+ * POST /devices/:id/mode
+ * Changer le mode d'une étiquette (ex: picking, inventory, etc.)
+ * Note: cette fonctionnalité permet de changer le comportement de l'étiquette selon le mode choisi.
+ * Par exemple, en mode "picking", l'étiquette affiche le numéro de lot à prélever et clignote en rouge pour attirer l'attention du préparateur.
+ * En mode "inventory", elle pourrait clignoter en bleu pour indiquer qu'elle doit être comptabilisée et affiche le stock actuel et un QR code pour accéder à la fiche produit dans Dolibarr.
+ */
+router.post("/:id/mode", async (req, res) => {
+  try {
+    const deviceId = parseInt(req.params.id, 10);
+    const { mode } = req.body;
+
+    if (!mode) {
+      return res.status(400).json({ error: "Mode is required" });
+    }
+
+    const device = await Device.findById(deviceId);
+
+    if (!device) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    if (!device.mac) {
+      return res.status(400).json({ error: "Device has no MAC address" });
+    }
+
+    // On met à jour le mode de l'étiquette dans la base de données
+    await Device.update(deviceId, { mode: mode === "inventory" ? 1 : 0 });
+
+    // On récupère les informations à afficher sur l'étiquette en fonction du mode choisi et on envoie la commande à l'étiquette pour mettre à jour son affichage et son comportement
+    let content = { lot: 'test', quantity: 3, stock: 10, empl: 'E.3.3.3' } // Exemple de contenu à afficher sur l'étiquette, à adapter selon vos besoins et la doc Minew
+
+    let result;
+    result = await MinewService.changeTagDisplay(device.mac, {
+      content, // Exemple de texte à afficher (numéro de lot)
+      template: mode === "inventory" ? "inventory_template" : "picking_template", // Exemple de template à utiliser selon le mode
+      device: device // On passe le device pour récupérer fk_product et emplacement
+    });
+    console.log("changeTagDisplay result:", result)
+
+    res.json({
+      success: true,
+      message: `Device mode changed to ${mode} successfully`,
+      device: Device.format(device),
+      result: result
+    });
+  } catch (error) {
+    console.error("Error changing device mode:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
+export default router;

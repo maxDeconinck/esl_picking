@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "winston-transport": "^4.9.0"
+  }
+}

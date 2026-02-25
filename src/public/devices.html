@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status - ESL Picking API</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #eee5e5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #37392e;
+        }
+        .header {
+            background: linear-gradient(135deg, #19647e 0%, #28afb0 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+        .card-header {
+            background-color: #fff;
+            border-bottom: 2px solid #19647e;
+            font-weight: 600;
+            font-size: 1.2rem;
+            padding: 1rem 1.5rem;
+            color: #37392e;
+        }
+        .badge-custom {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        .status-online {
+            background-color: #28afb0;
+        }
+        #devicesTable_wrapper .dataTables_filter input {
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+        }
+        .table thead th {
+            background-color: #19647e;
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+        .device-mac {
+            font-family: 'Courier New', monospace;
+            background-color: #ddcecd;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: #37392e;
+        }
+        .refresh-btn {
+            background: linear-gradient(135deg, #19647e 0%, #28afb0 100%);
+            border: none;
+            border-radius: 20px;
+            padding: 0.5rem 1.5rem;
+            transition: transform 0.2s;
+            color: white;
+        }
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #19647e;
+        }
+        .stats-label {
+            color: #37392e;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .product-link {
+            color: #19647e;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .product-link:hover {
+            color: #28afb0;
+            text-decoration: underline;
+        }
+        .product-link i {
+            margin-right: 0.25rem;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            margin: 0 0.15rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+        }
+        .action-btn:hover {
+            transform: scale(1.2);
+        }
+        .action-btn.blink {
+            color: #28afb0;
+        }
+        .action-btn.edit {
+            color: #19647e;
+        }
+        .action-btn.detach {
+            color: #dc3545;
+        }
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-tags"></i> ESL Picking API - Status</h1>
+                    <p class="mb-0">Gestion des étiquettes électroniques</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge badge-custom status-online">
+                        <i class="fas fa-circle"></i> API Online
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- API Token Configuration Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-key"></i> Configuration API Token
+            </div>
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-8">
+                        <label for="apiTokenInput" class="form-label">Token d'authentification API</label>
+                        <input 
+                            type="password" 
+                            class="form-control" 
+                            id="apiTokenInput" 
+                            placeholder="Entrez votre token API"
+                            autocomplete="off">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> Le token est stocké localement dans votre navigateur
+                        </small>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary w-100" onclick="saveApiToken()">
+                            <i class="fas fa-save"></i> Sauvegarder le Token
+                        </button>
+                        <button class="btn btn-outline-secondary w-100 mt-2" onclick="toggleTokenVisibility()">
+                            <i class="fas fa-eye" id="toggleIcon"></i> <span id="toggleText">Afficher</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="stats-number" id="totalDevices">-</div>
+                    <div class="stats-label">Total Étiquettes</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="stats-number" id="assignedDevices">-</div>
+                    <div class="stats-label">Avec Emplacement</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="stats-number" id="unassignedDevices">-</div>
+                    <div class="stats-label">Sans Emplacement</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Picking Simulation Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-box"></i> Simulation de Préparation de Commande
+            </div>
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-8">
+                        <label for="orderNumberInput" class="form-label">Numéro de commande</label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="orderNumberInput" 
+                            placeholder="Entrez le numéro de commande (ex: 123)"
+                            autocomplete="off">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> Saisissez le numéro de commande Dolibarr pour démarrer la préparation
+                        </small>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-success w-100" onclick="startOrderPicking()">
+                            <i class="fas fa-play"></i> Démarrer la Préparation
+                        </button>
+                    </div>
+                </div>
+                <div id="pickingResult" class="mt-3" style="display: none;">
+                    <div class="alert alert-info">
+                        <strong><i class="fas fa-spinner fa-spin"></i> Préparation en cours...</strong>
+                        <div id="pickingResultDetails"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Devices Table Card -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-table"></i> Liste des Étiquettes</span>
+                <button class="btn btn-primary refresh-btn" onclick="loadDevices()">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="devicesTable" class="table table-hover table-striped" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nom</th>
+                                <th>Adresse MAC</th>
+                                <th>Clé</th>
+                                <th>Emplacement</th>
+                                <th>Produit</th>
+                                <th>Mode</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Les données seront chargées dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="text-center" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'édition d'étiquette -->
+    <div class="modal fade" id="editDeviceModal" tabindex="-1" aria-labelledby="editDeviceModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #19647e 0%, #28afb0 100%); color: white;">
+                    <h5 class="modal-title" id="editDeviceModalLabel">
+                        <i class="fas fa-edit"></i> Modifier l'étiquette #<span id="editDeviceId"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editDeviceForm">
+                        <div class="mb-3">
+                            <label for="editDeviceName" class="form-label">Nom</label>
+                            <input type="text" class="form-control" id="editDeviceName" placeholder="Nom de l'étiquette">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDeviceEmplacement" class="form-label">Emplacement</label>
+                            <input type="text" class="form-control" id="editDeviceEmplacement" placeholder="Emplacement">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDeviceProduct" class="form-label">ID Produit Dolibarr</label>
+                            <input type="number" class="form-control" id="editDeviceProduct" placeholder="ID du produit">
+                            <small class="text-muted">Laissez vide pour ne pas associer de produit</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Adresse MAC</label>
+                            <input type="text" class="form-control" id="editDeviceMac" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mode</label>
+                            <select class="form-select" id="editDeviceMode">
+                                <option value="0">Picking</option>
+                                <option value="1">Inventaire</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveDeviceEdit()" style="background: linear-gradient(135deg, #19647e 0%, #28afb0 100%); border: none;">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        let dataTable;
+        let currentDevices = [];
+
+        // Configuration de l'API
+        const API_BASE_URL = window.location.origin;
+        
+        // Fonction pour charger les devices
+        async function loadDevices() {
+            try {
+                $('#loadingSpinner').show();
+                
+                // Récupérer le token depuis le localStorage ou utiliser un token par défaut
+                const apiToken = localStorage.getItem('apiToken') || 'YOUR_API_TOKEN_HERE';
+                
+                const response = await fetch(`${API_BASE_URL}/devices`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Token d\'authentification invalide');
+                    }
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success && data.devices) {
+                    updateStats(data.devices);
+                    updateTable(data.devices);
+                } else {
+                    console.error('Format de réponse invalide:', data);
+                    showError('Format de données invalide');
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des devices:', error);
+                showError(error.message);
+            } finally {
+                $('#loadingSpinner').hide();
+            }
+        }
+
+        // Fonction pour mettre à jour les statistiques
+        function updateStats(devices) {
+            const total = devices.length;
+            const assigned = devices.filter(d => d.emplacement && d.emplacement !== '' && d.emplacement !== null).length;
+            const unassigned = total - assigned;
+
+            $('#totalDevices').text(total);
+            $('#assignedDevices').text(assigned);
+            $('#unassignedDevices').text(unassigned);
+        }
+
+        // Fonction pour mettre à jour le tableau
+        function updateTable(devices) {
+            // Stocker les devices pour y accéder dans les fonctions
+            currentDevices = devices;
+            
+            // Détruire le DataTable existant s'il existe
+            if (dataTable) {
+                dataTable.destroy();
+            }
+
+            // Préparer les données pour DataTables
+            const tableData = devices.map(device => [
+                device.id,
+                device.name || '<span class="text-muted">-</span>',
+                `<span class="device-mac">${device.mac || '-'}</span>`,
+                device.key || '<span class="text-muted">-</span>',
+                device.emplacement || '<span class="badge bg-warning text-dark">Non assigné</span>',
+                device.product 
+                    ? `<a href="${device.product.url}" target="_blank" class="product-link">
+                        <i class="fas fa-box"></i> ${device.product.label || device.product.ref}
+                        <i class="fas fa-external-link-alt ms-1" style="font-size: 0.8em;"></i>
+                       </a>` 
+                    : '<span class="text-muted">-</span>',
+                    device.mode === 1 ? '<span class="badge bg-info">Inventaire</span>' : '<span class="badge bg-success">Picking</span>',
+                `<div class="text-center" style="white-space: nowrap;">
+                    <button class="action-btn blink" onclick="blinkDevice(${device.id})" title="Faire clignoter 10s">
+                        <i class="fas fa-lightbulb"></i>
+                    </button>
+                    <button class="action-btn edit" onclick="editDevice(${device.id})" title="Modifier l'étiquette">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    ${device.fk_product ? `<button class="action-btn detach" onclick="detachDevice(${device.id})" title="Détacher du produit">
+                        <i class="fas fa-unlink"></i>
+                    </button>` : ''}
+                 </div>`
+            ]);
+
+            // Initialiser DataTables
+            dataTable = $('#devicesTable').DataTable({
+                data: tableData,
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
+                },
+                pageLength: 25,
+                order: [[0, 'asc']],
+                responsive: true,
+                columnDefs: [
+                    { className: "text-center", targets: [0] },
+                    { orderable: false, targets: [6] } // Désactiver le tri sur la colonne Actions
+                ]
+            });
+        }
+
+        // Fonction pour afficher les erreurs
+        function showError(message) {
+            const alertHtml = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Erreur:</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            $('.container').prepend(alertHtml);
+            
+            // Auto-dismiss après 5 secondes
+            setTimeout(() => {
+                $('.alert').fadeOut(500, function() {
+                    $(this).remove();
+                });
+            }, 5000);
+        }
+
+        // Fonction pour faire clignoter une étiquette
+        async function blinkDevice(deviceId) {
+            try {
+                const apiToken = localStorage.getItem('apiToken');
+                if (!apiToken) {
+                    showError('Token API requis');
+                    return;
+                }
+
+                // Désactiver le bouton temporairement
+                const btn = event.target.closest('.action-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/blink`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur lors de l\'envoi de la commande');
+                }
+
+                const data = await response.json();
+                
+                // Afficher un message de succès
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle"></i> L'étiquette #${deviceId} clignote pendant 10 secondes!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                $('.container').prepend(alertHtml);
+                
+                setTimeout(() => {
+                    $('.alert-success').fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                }, 3000);
+
+                // Réactiver le bouton après 10 secondes
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-lightbulb"></i>';
+                }, 10000);
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError(error.message);
+                
+                // Réactiver le bouton en cas d'erreur
+                const btn = event.target.closest('.action-btn');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-lightbulb"></i>';
+            }
+        }
+
+        // Fonction pour éditer une étiquette
+        function editDevice(deviceId) {
+            const device = currentDevices.find(d => d.id === deviceId);
+            if (!device) return;
+
+            $('#editDeviceId').text(deviceId);
+            $('#editDeviceName').val(device.name || '');
+            $('#editDeviceEmplacement').val(device.emplacement || '');
+            $('#editDeviceProduct').val(device.fk_product || '');
+            $('#editDeviceMac').val(device.mac || '');
+            $('#editDeviceMode').val(device.mode !== undefined ? device.mode : '0');
+            $('#editDeviceForm').data('deviceId', deviceId);
+
+            const modal = new bootstrap.Modal(document.getElementById('editDeviceModal'));
+            modal.show();
+        }
+
+        // Fonction pour sauvegarder les modifications
+        async function saveDeviceEdit() {
+            try {
+                const deviceId = $('#editDeviceForm').data('deviceId');
+                const apiToken = localStorage.getItem('apiToken');
+                
+                if (!apiToken) {
+                    showError('Token API requis');
+                    return;
+                }
+
+                const data = {
+                    name: $('#editDeviceName').val() || null,
+                    emplacement: $('#editDeviceEmplacement').val() || null,
+                    fk_product: $('#editDeviceProduct').val() ? parseInt($('#editDeviceProduct').val()) : null,
+                    mode: $('#editDeviceMode').val() ? parseInt($('#editDeviceMode').val()) : null
+                };
+
+                const response = await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur lors de la mise à jour');
+                }
+
+                // Fermer la modal
+                bootstrap.Modal.getInstance(document.getElementById('editDeviceModal')).hide();
+
+                // Afficher un message de succès
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle"></i> Étiquette #${deviceId} mise à jour avec succès!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                $('.container').prepend(alertHtml);
+                
+                setTimeout(() => {
+                    $('.alert-success').fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                }, 3000);
+
+                // Recharger les données
+                loadDevices();
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError(error.message);
+            }
+        }
+
+        // Fonction pour détacher une étiquette d'un produit
+        async function detachDevice(deviceId) {
+            if (!confirm('Êtes-vous sûr de vouloir détacher cette étiquette du produit ?')) {
+                return;
+            }
+
+            try {
+                const apiToken = localStorage.getItem('apiToken');
+                if (!apiToken) {
+                    showError('Token API requis');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/detach`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur lors du détachement');
+                }
+
+                // Afficher un message de succès
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle"></i> Étiquette #${deviceId} détachée du produit!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                $('.container').prepend(alertHtml);
+                
+                setTimeout(() => {
+                    $('.alert-success').fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                }, 3000);
+
+                // Recharger les données
+                loadDevices();
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError(error.message);
+            }
+        }
+
+        // Fonction pour démarrer la préparation d'une commande
+        async function startOrderPicking() {
+            const orderNumber = $('#orderNumberInput').val().trim();
+            
+            if (!orderNumber) {
+                showError('Veuillez saisir un numéro de commande');
+                return;
+            }
+
+            const token = localStorage.getItem('apiToken');
+            if (!token) {
+                showError('Veuillez d\'abord configurer votre token API');
+                return;
+            }
+
+            // Afficher le spinner de chargement
+            $('#pickingResult').show();
+            $('#pickingResultDetails').html('<div class="spinner-border spinner-border-sm me-2" role="status"></div>Chargement de la commande...');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/orders/${orderNumber}/picking`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erreur lors de la préparation de commande');
+                }
+
+                // Afficher les résultats
+                let resultHtml = `
+                    <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                        <strong><i class="fas fa-check-circle"></i> Préparation démarrée avec succès!</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="$('#pickingResult').hide();"></button>
+                        <hr>
+                        <p class="mb-2"><strong>Commande:</strong> ${data.ref || orderNumber}</p>
+                        <p class="mb-2"><strong>Client:</strong> ${data.customer?.name || 'N/A'}</p>
+                        <p class="mb-2"><strong>Nombre de produits:</strong> ${data.lines?.length || 0}</p>
+                `;
+
+                if (data.lines && data.lines.length > 0) {
+                    resultHtml += '<hr><strong>Produits de la commande:</strong><ul class="mb-0 mt-2">';
+                    data.lines.forEach(line => {
+                        resultHtml += `
+                            <li>
+                                <strong>${line.product_details?.ref || 'N/A'}</strong> - 
+                                ${line.product_details?.label || 'N/A'} 
+                                (Qté: ${line.qty})
+                            </li>
+                        `;
+                    });
+                    resultHtml += '</ul>';
+                }
+
+                resultHtml += '</div>';
+                $('#pickingResult').html(resultHtml);
+
+                // Réinitialiser le champ après succès
+                $('#orderNumberInput').val('');
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                $('#pickingResult').html(`
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong><i class="fas fa-exclamation-circle"></i> Erreur:</strong> ${error.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="$('#pickingResult').hide();"></button>
+                    </div>
+                `);
+            }
+        }
+
+        // Fonction pour sauvegarder le token API
+        function saveApiToken() {
+            const token = $('#apiTokenInput').val().trim();
+            if (token) {
+                localStorage.setItem('apiToken', token);
+                
+                // Afficher un message de succès
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle"></i> <strong>Succès:</strong> Token API sauvegardé avec succès!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                $('.container').prepend(alertHtml);
+                
+                // Auto-dismiss après 3 secondes
+                setTimeout(() => {
+                    $('.alert-success').fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                }, 3000);
+                
+                // Recharger les données
+                loadDevices();
+            } else {
+                showError('Veuillez entrer un token valide');
+            }
+        }
+
+        // Fonction pour basculer la visibilité du token
+        function toggleTokenVisibility() {
+            const input = $('#apiTokenInput');
+            const icon = $('#toggleIcon');
+            const text = $('#toggleText');
+            
+            if (input.attr('type') === 'password') {
+                input.attr('type', 'text');
+                icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                text.text('Masquer');
+            } else {
+                input.attr('type', 'password');
+                icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                text.text('Afficher');
+            }
+        }
+
+        // Charger les devices au chargement de la page
+        $(document).ready(function() {
+            // Charger le token existant dans le champ
+            const savedToken = localStorage.getItem('apiToken');
+            if (savedToken) {
+                $('#apiTokenInput').val(savedToken);
+            } else {
+                // Afficher un message d'information si pas de token
+                const alertHtml = `
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <strong>Configuration requise:</strong> 
+                        Veuillez saisir votre token API ci-dessus pour accéder aux données.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                $('.container').prepend(alertHtml);
+            }
+            
+            // Permettre de sauvegarder avec la touche Entrée
+            $('#apiTokenInput').on('keypress', function(e) {
+                if (e.which === 13) {
+                    saveApiToken();
+                }
+            });
+            
+            // Permettre de démarrer la préparation avec la touche Entrée
+            $('#orderNumberInput').on('keypress', function(e) {
+                if (e.which === 13) {
+                    startOrderPicking();
+                }
+            });
+            
+            loadDevices();
+        });
+    </script>
+</body>
+</html>
