@@ -249,6 +249,41 @@ router.post("/:id/blink", async (req, res) => {
 });
 
 /**
+ * POST /devices/button
+ * Recevoir les notifications de clics sur les étiquettes
+ * Note: cette route est appelée par Minew lorsqu'un utilisateur clique sur une étiquette. Elle reçoit l'ID de l'étiquette et peut être utilisée pour déclencher des actions spécifiques, comme afficher les détails du produit associé ou lancer un processus de picking.
+ */
+router.post("/button", async (req, res) => {
+  try {
+    const { mac } = req.body;
+    // On écrit le payload reçu dans les logs pour debugger les notifications de clics
+    console.log("Button click received with payload:", req.body);
+
+    if (!mac) {
+      return res.status(400).json({ error: "Device MAC is required" });
+    }
+
+    const device = await Device.findByMac(mac);
+
+    if (!device) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    // Ici, vous pouvez ajouter le code pour gérer l'action spécifique lorsque l'utilisateur clique sur l'étiquette
+    // Par exemple, afficher les détails du produit associé ou lancer un processus de picking
+
+    res.json({
+      success: true,
+      message: "Button click received",
+      device: Device.format(device),
+    });
+  } catch (error) {
+    console.error("Error handling button click:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
  * PATCH /devices/:id/detach
  * Détacher une étiquette de son produit
  */
