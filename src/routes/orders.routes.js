@@ -84,26 +84,21 @@ router.post("/:id/picking", async (req, res) => {
                 name: line.product_details.label,
                 quantity: line.quantity,
                 emplacement: element.emplacement,
-                stock: stock.stock_qty // A gérer selon la disponibilité du stock dans Dolibarr
-              });
-
-              console.log('Data generated for tag:', {
-                productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
-                lot: stock.batch_number || "N/A",
-                name: line.product_details.label,
-                quantity: line.quantity,
-                emplacement: element.emplacement,
-                stock: stock.stock_qty // A gérer selon la disponibilité du stock dans Dolibarr
+                stock: stock.stock_qty,
+                ref: line.product_details.ref
               });
 
               // Associer la data au template de l'étiquette
-              // await Minew.changeTagDisplay(element.mac, {
-              //   mode: "picking",
-              //   idData: line.fk_product + '-' + element.emplacement // Id utilisé dans le template pour afficher les bonnes infos
-              // });
+              await Minew.changeTagDisplay(element.mac, {
+                mode: "picking",
+                idData: line.fk_product + '-' + element.emplacement // Id utilisé dans le template pour afficher les bonnes infos
+              });
 
               // Faire clignoter l'étiquette pour attirer l'attention du préparateur
               await Minew.blinkTag(element.mac, {total: 300, color: "cyan"}); // Clignote pendant 5 minutes (60 secondes * 5)
+
+              // Passer l'étiquette en mode picking
+              await Device.update(element.id, { mode: 1 });
 
               console.log('Tag updated for device:', element.mac, { result });
             } else {

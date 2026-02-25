@@ -129,7 +129,8 @@ class Minew {
       name: data.name,
       quantity: data.quantity,
       specification: data.emplacement,
-      supplier: data.stock
+      stock: data.stock,
+      ref: data.ref
     }
 
     console.log('Adding goods to store with data:', payload) // Debug log

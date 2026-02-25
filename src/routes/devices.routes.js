@@ -255,9 +255,10 @@ router.post("/:id/blink", async (req, res) => {
  */
 router.post("/button", async (req, res) => {
   try {
-    const { mac } = req.body;
+    req.body = {"mac":"e10000031d63","buttonId":"01","buttonEvent":"01","buttonTime":1770829136661,"opcode":368099704} // Mock de payload pour les tests, à supprimer en production
+    const { mac, buttonId, buttonEvent, buttonTime } = JSON.parse(JSON.stringify(req.body)); // On stringify pour éviter les problèmes de parsing des logs avec des objets complexes
     // On écrit le payload reçu dans les logs pour debugger les notifications de clics
-    console.log("Button click received with payload:", req.body);
+    // Le log : {"mac":"e10000031d63","buttonId":"01","buttonEvent":"01","buttonTime":1770829136661,"opcode":368099704}
 
     if (!mac) {
       return res.status(400).json({ error: "Device MAC is required" });
@@ -269,8 +270,20 @@ router.post("/button", async (req, res) => {
       return res.status(404).json({ error: "Device not found" });
     }
 
-    // Ici, vous pouvez ajouter le code pour gérer l'action spécifique lorsque l'utilisateur clique sur l'étiquette
-    // Par exemple, afficher les détails du produit associé ou lancer un processus de picking
+    if(device.mode === 1) { // Si l'étiquette est en mode picking
+      // On arrête le clignotement de l'étiquette
+      await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
+
+      // On remet l'étiquette en mode normal
+      await Device.update(device.id, { mode: 0 });
+
+      // On décompte le stock dans Dolibarr pour le produit associé à l'étiquette (si fk_product est défini)
+      if(device.fk_product) {
+        // Ici, vous pouvez appeler une méthode de DolibarrAPI pour décompter le stock du produit associé à l'étiquette
+        // Par exemple: await DolibarrAPI.decreaseProductStock(device.fk_product, quantity);
+        console.log(`Décompter le stock pour le produit ${device.fk_product} dans Dolibarr`);
+      }
+    }
 
     res.json({
       success: true,
