@@ -419,7 +419,7 @@ router.post("/:id/update-screen", async (req, res) => {
       name: product.label,
       quantity: 0,
       emplacement: device.emplacement,
-      stock: stock[0].batch_qty,
+      stock: stock[0].stock_reel,
       ref: product.ref,
       qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock`
     });

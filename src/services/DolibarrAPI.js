@@ -217,7 +217,7 @@ class DolibarrAPI {
         warehouse_ref: row.warehouse_ref,
         warehouse_description: row.warehouse_description,
         stock_total: parseFloat(row.stock_total || 0), // Stock total tous lots confondus
-        stock_reel: parseFloat(row.batch_qty || row.stock_total || 0), // Stock du lot spécifique
+        stock_reel: parseFloat(row.batch_qty || 0), // Stock du lot spécifique
         batch_number: row.batch_number || "N/A",
         batch_id: row.batch_id
       }));
