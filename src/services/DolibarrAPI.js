@@ -1,101 +1,38 @@
-import axios from "axios";
+import pool from "../config/database_dolibarr.js";
 import logger from "./Logger.js";
-
-const SENSITIVE_RE = /password|pass|pwd|secret|token|authorization|auth/i;
-
-function sanitize(obj) {
-  if (!obj || typeof obj !== 'object') return obj;
-  try {
-    const clone = JSON.parse(JSON.stringify(obj));
-    const mask = (o) => {
-      if (Array.isArray(o)) {
-        o.forEach(mask);
-      } else if (o && typeof o === 'object') {
-        Object.keys(o).forEach((k) => {
-          if (SENSITIVE_RE.test(k)) {
-            o[k] = '***';
-          } else if (o[k] && typeof o[k] === 'object') {
-            mask(o[k]);
-          }
-        });
-      }
-    };
-    mask(clone);
-    return clone;
-  } catch (e) {
-    return obj;
-  }
-}
 
 class DolibarrAPI {
   constructor() {
-    this.baseURL = process.env.DOLIBARR_URL;
-    this.apiKey = process.env.DOLIBARR_API_KEY;
-    
-    if (!this.baseURL || !this.apiKey) {
-      throw new Error("DOLIBARR_URL and DOLIBARR_API_KEY must be defined in .env");
-    }
-
-    this.client = axios.create({
-      baseURL: this.baseURL,
-      headers: {
-        "DOLAPIKEY": this.apiKey,
-        "Content-Type": "application/json",
-      },
-      timeout: 30000,
-    });
-
-    // Intercepteur pour logger toutes les requêtes
-    this.client.interceptors.request.use(
-      (config) => {
-        logger.info("Dolibarr API Request", {
-          method: config.method.toUpperCase(),
-          url: config.url,
-          params: sanitize(config.params),
-          data: sanitize(config.data),
-        });
-        return config;
-      },
-      (error) => {
-        logger.error("Dolibarr API Request Error", { error: error.message });
-        return Promise.reject(error);
-      }
-    );
-
-    // Intercepteur pour logger toutes les réponses
-    this.client.interceptors.response.use(
-      (response) => {
-        logger.info("Dolibarr API Response", {
-          status: response.status,
-          url: response.config.url,
-          data: sanitize(response.data),
-        });
-        return response;
-      },
-      (error) => {
-        logger.error("Dolibarr API Response Error", {
-          status: error.response?.status,
-          url: error.config?.url,
-          message: error.message,
-          data: sanitize(error.response?.data),
-          requestData: sanitize(error.config?.data),
-        });
-        return Promise.reject(error);
-      }
-    );
+    this.db = pool;
+    this.tablePrefix = process.env.DOLIBARR_TABLE_PREFIX || "llx_";
   }
 
   /**
-   * Récupérer une commande par son ID avec toutes ses informations
-   * @param {number} orderId - ID de la commande Dolibarr
-   * @returns {Promise<Object>}
+   * Exécuter une requête SQL avec logging
+   * @param {string} query - Requête SQL
+   * @param {Array} params - Paramètres de la requête
+   * @returns {Promise<Array>}
    */
-  async getOrder(orderId) {
+  async executeQuery(query, params = []) {
     try {
-      const response = await this.client.get(`/api/index.php/orders/${orderId}`);
-      return response.data;
+      logger.info("Executing SQL query", {
+        query: query.substring(0, 200),
+        params,
+      });
+      
+      const [rows] = await this.db.execute(query, params);
+      
+      logger.info("SQL query successful", {
+        rowCount: Array.isArray(rows) ? rows.length : 1,
+      });
+      
+      return rows;
     } catch (error) {
-      logger.error(`Failed to fetch order ${orderId}`, { error: error.message });
+      logger.error("SQL query failed", {
+        error: error.message,
+        query: query.substring(0, 200),
+        params,
+      });
       throw error;
     }
   }
@@ -107,8 +44,38 @@ class DolibarrAPI {
    */
   async getOrderLines(orderId) {
     try {
-      const order = await this.getOrder(orderId);
-      return order.lines || [];
+      const query = `
+        SELECT 
+          cd.*,
+          p.ref as product_ref,
+          p.label as product_label,
+          p.description as product_description,
+          p.barcode as product_barcode
+        FROM ${this.tablePrefix}commandedet cd
+        LEFT JOIN ${this.tablePrefix}product p ON cd.fk_product = p.rowid
+        WHERE cd.fk_commande = ?
+        ORDER BY cd.rang, cd.rowid
+      `;
+      
+      const rows = await this.executeQuery(query, [orderId]);
+      
+      return rows.map(line => ({
+        id: line.rowid,
+        fk_commande: line.fk_commande,
+        fk_product: line.fk_product,
+        description: line.description,
+        label: line.label,
+        qty: parseFloat(line.qty),
+        tva_tx: parseFloat(line.tva_tx),
+        subprice: parseFloat(line.subprice),
+        total_ht: parseFloat(line.total_ht),
+        total_tva: parseFloat(line.total_tva),
+        total_ttc: parseFloat(line.total_ttc),
+        product_ref: line.product_ref,
+        product_label: line.product_label,
+        product_description: line.product_description,
+        product_barcode: line.product_barcode,
+      }));
     } catch (error) {
       logger.error(`Failed to fetch order lines for ${orderId}`, { error: error.message });
       throw error;
@@ -122,8 +89,36 @@ class DolibarrAPI {
    */
   async getProduct(productId) {
     try {
-      const response = await this.client.get(`/api/index.php/products/${productId}`);
-      return response.data;
+      const query = `
+        SELECT 
+          p.*
+        FROM ${this.tablePrefix}product p
+        WHERE p.rowid = ?
+      `;
+      
+      const rows = await this.executeQuery(query, [productId]);
+      
+      if (rows.length === 0) {
+        throw new Error(`Product ${productId} not found`);
+      }
+      
+      const product = rows[0];
+      
+      return {
+        id: product.rowid,
+        ref: product.ref,
+        label: product.label,
+        description: product.description,
+        barcode: product.barcode,
+        price: parseFloat(product.price || 0),
+        price_ttc: parseFloat(product.price_ttc || 0),
+        tva_tx: parseFloat(product.tva_tx || 0),
+        stock_reel: parseFloat(product.stock || 0),
+        weight: parseFloat(product.weight || 0),
+        length: parseFloat(product.length || 0),
+        width: parseFloat(product.width || 0),
+        height: parseFloat(product.height || 0),
+      };
     } catch (error) {
       logger.error(`Failed to fetch product ${productId}`, { error: error.message });
       throw error;
@@ -134,28 +129,51 @@ class DolibarrAPI {
    * Récupérer le stock d'un produit dans un entrepôt spécifique
    * @param {number} productId - ID du produit
    * @param {number} warehouseId - ID de l'entrepôt (optionnel)
-   * @returns {Promise<Array>}
+   * @returns {Promise<Object>}
    */
   async getProductStock(productId, warehouseId = null) {
     try {
-      const params = warehouseId ? { warehouse_id: warehouseId } : {};
-      const response = await this.client.get(
-        `/api/index.php/products/${productId}/stock`,
-        { params }
-      );
+      let query = `
+        SELECT 
+          ps.*,
+          e.ref as warehouse_ref,
+          e.description as warehouse_description,
+          e.lieu as warehouse_location
+        FROM ${this.tablePrefix}product_stock ps
+        LEFT JOIN ${this.tablePrefix}entrepot e ON ps.fk_entrepot = e.rowid
+        WHERE ps.fk_product = ?
+      `;
       
-      const stockData = response.data;
-      for (const [key, stock] of Object.entries(stockData.stock_warehouses || [])) {
-        try {
-          const warehouseInfo = await this.getWarehousesInfosByID(key);
-          stock.warehouse_info = warehouseInfo;
-        } catch (error) {
-          logger.warn(`Failed to fetch warehouse info for warehouse ${stock.warehouse}`, { error: error.message });
-          stock.warehouse_info = null;
-        }
+      const params = [productId];
+      
+      if (warehouseId) {
+        query += ` AND ps.fk_entrepot = ?`;
+        params.push(warehouseId);
       }
       
-      return stockData;
+      const rows = await this.executeQuery(query, params);
+      
+      const stockWarehouses = {};
+      
+      for (const stock of rows) {
+        stockWarehouses[stock.fk_entrepot] = {
+          warehouse_id: stock.fk_entrepot,
+          warehouse_ref: stock.warehouse_ref,
+          warehouse_description: stock.warehouse_description,
+          warehouse_location: stock.warehouse_location,
+          reel: parseFloat(stock.reel || 0),
+          warehouse_info: {
+            id: stock.fk_entrepot,
+            ref: stock.warehouse_ref,
+            description: stock.warehouse_description,
+            lieu: stock.warehouse_location,
+          },
+        };
+      }
+      
+      return {
+        stock_warehouses: stockWarehouses,
+      };
     } catch (error) {
       logger.error(`Failed to fetch stock for product ${productId}`, { error: error.message });
       throw error;
@@ -163,97 +181,45 @@ class DolibarrAPI {
   }
 
   /**
-   * Récupérer les entrepôts
-   * @returns {Promise<Array>}
-   */
-  async getWarehousesInfosByID() {
-    try {
-      const response = await this.client.get(`/api/index.php/warehouses`);
-      return response.data;
-    } catch (error) {
-      logger.error("Failed to fetch warehouses", { error: error.message });
-      throw error;
-    }
-  }
-
-  /**
    * Récupérer les données d'un emplacement pour un produit donné (ex: stock, etc.)
    * @param {string} emplacement - Emplacement à rechercher
-   * @returns {Promise<Object>}
+   * @returns {Promise<Array>}
    */
   async getDataByEmplacement(emplacement) {
     try {
-      const response = await this.client.get(`/api/index.php/stock/emplacement`, {
-        params: { emplacement },
-      });
-      return response.data;
+      const query = `
+        SELECT 
+          e.ref as warehouse_ref,
+          e.description as warehouse_description,
+          fk_product as product_id,
+          p.ref as product_ref,
+          p.label as product_label,
+          p.barcode as barcode,
+          ps.reel as stock_reel,
+          pb.batch as batch,
+          fk_entrepot as warehouse_id,
+          pb.rowid as batch_id
+        FROM ${this.tablePrefix}entrepot e
+        LEFT JOIN ${this.tablePrefix}product_stock ps ON e.rowid = ps.fk_entrepot
+        LEFT JOIN ${this.tablePrefix}product p ON ps.fk_product = p.rowid
+        LEFT JOIN ${this.tablePrefix}product_batch pb ON pb.fk_product_stock = ps.rowid
+        WHERE e.ref LIKE ?
+      `;
+      
+      const rows = await this.executeQuery(query, [`%${emplacement}%`]);
+      
+      return rows.map(row => ({
+        product_id: row.product_id,
+        product_ref: row.product_ref,
+        product_label: row.product_label,
+        warehouse_id: row.warehouse_id,
+        warehouse_ref: row.warehouse_ref,
+        warehouse_description: row.warehouse_description,
+        stock_reel: parseFloat(row.stock_reel || 0),
+        batch_number: row.batch || "N/A"
+      }));
     } catch (error) {
       logger.error(`Failed to fetch data for emplacement ${emplacement}`, { error: error.message });
-      throw error;
-    }
-  }
-
-
-  /**
-   * Récupérer une commande complète avec produits et emplacements
-   * @param {number} orderId - ID de la commande
-   * @returns {Promise<Object>}
-   */
-  async getOrderWithDetails(orderId) {
-    try {
-      // 1. Récupérer la commande
-      const order = await this.getOrder(orderId);
-
-      // 2. Enrichir chaque ligne avec les détails du produit et son stock
-      const enrichedLines = await Promise.all(
-        (order.lines || []).map(async (line) => {
-          try {
-            // Récupérer les infos produit
-            const product = await this.getProduct(line.fk_product);
-            
-            // Récupérer le stock du produit (tous les entrepôts)
-            const stock = await this.getProductStock(line.fk_product);
-
-            return {
-              ...line,
-              product_details: {
-                ref: product.ref,
-                label: product.label,
-                description: product.description,
-                barcode: product.barcode,
-              },
-              stock_locations: stock,
-            };
-          } catch (error) {
-            logger.warn(`Failed to enrich line for product ${line.fk_product}`, {
-              error: error.message,
-            });
-            return {
-              ...line,
-              product_details: null,
-              stock_locations: [],
-            };
-          }
-        })
-      );
-
-      return {
-        id: order.id,
-        ref: order.ref,
-        date: order.date,
-        status: order.statut,
-        customer: {
-          id: order.socid,
-          name: order.thirdparty?.name,
-        },
-        lines: enrichedLines,
-        total_ht: order.total_ht,
-        total_ttc: order.total_ttc,
-      };
-    } catch (error) {
-      logger.error(`Failed to fetch order with details ${orderId}`, {
-        error: error.message,
-      });
       throw error;
     }
   }

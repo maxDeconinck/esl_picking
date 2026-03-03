@@ -130,10 +130,9 @@ class Minew {
       quantity: data.quantity,
       specification: data.emplacement,
       stock: data.stock,
-      ref: data.ref
+      ref: data.ref,
+      qrcode: data.qrcode
     }
-
-    console.log('Adding goods to store with data:', payload) // Debug log
     try {
       // Remove DATA before insert
       const resDelete = await axios.post(`${this.baseUrl.replace(/\/$/, '')}/apis/esl/goods/batchDelete`, {
@@ -164,7 +163,7 @@ class Minew {
     let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/label/multiScreenBinding`
     let code = '2026214340654272512' // Picking par défaut
     if(mode == "inventory") {
-      code = '2026214340654272512'
+      code = '2026695741933621248'
     }
 
     let payload = {

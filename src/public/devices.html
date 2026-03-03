@@ -423,6 +423,9 @@
                     : '<span class="text-muted">-</span>',
                     device.mode === 1 ? '<span class="badge bg-info">Inventaire</span>' : '<span class="badge bg-success">Picking</span>',
                 `<div class="text-center" style="white-space: nowrap;">
+                    <button class="action-btn blink" onclick="updateScreenDevice(${device.id})" title="Mettre à jour l'affichage">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
                     <button class="action-btn blink" onclick="blinkDevice(${device.id})" title="Faire clignoter 10s">
                         <i class="fas fa-lightbulb"></i>
                     </button>
@@ -526,6 +529,44 @@
                 const btn = event.target.closest('.action-btn');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-lightbulb"></i>';
+            }
+        }
+
+        // Fonction pour mettre à jour l'affichage d'une étiquette
+        async function updateScreenDevice(deviceId) {
+            try {
+                const apiToken = localStorage.getItem('apiToken');
+                if (!apiToken) {
+                    showError('Token API requis');
+                    return;
+                }
+                const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/update-screen`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Erreur lors de la mise à jour de l\'affichage');
+                }
+                const data = await response.json();
+                // Afficher un message de succès
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle"></i> Affichage de l'étiquette #${deviceId} mis à jour avec succès!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                $('.container').prepend(alertHtml);
+                setTimeout(() => {
+                    $('.alert-success').fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                }, 3000);
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError(error.message);
             }
         }
 
