@@ -421,7 +421,7 @@ router.post("/:id/update-screen", async (req, res) => {
       emplacement: device.emplacement,
       stock: stock[0].stock_reel,
       ref: product.ref,
-      qrcode: `https://erpv21.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock`
+      qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock`
     });
     console.log('Data prepared for tag display:', dataEtiquette.data)
 
