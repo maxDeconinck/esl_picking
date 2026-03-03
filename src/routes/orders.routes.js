@@ -84,7 +84,7 @@ router.post("/:id/picking", async (req, res) => {
                 name: line.product_details.label,
                 quantity: line.quantity,
                 emplacement: element.emplacement,
-                stock: stock.stock_qty,
+                stock: stock.batch_qty,
                 ref: line.product_details.ref
               });
 

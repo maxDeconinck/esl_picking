@@ -191,13 +191,14 @@ class DolibarrAPI {
         SELECT 
           e.ref as warehouse_ref,
           e.description as warehouse_description,
-          fk_product as product_id,
+          ps.fk_product as product_id,
           p.ref as product_ref,
           p.label as product_label,
           p.barcode as barcode,
-          ps.reel as stock_reel,
-          pb.batch as batch,
-          fk_entrepot as warehouse_id,
+          ps.reel as stock_total,
+          pb.batch as batch_number,
+          pb.qty as batch_qty,
+          ps.fk_entrepot as warehouse_id,
           pb.rowid as batch_id
         FROM ${this.tablePrefix}entrepot e
         LEFT JOIN ${this.tablePrefix}product_stock ps ON e.rowid = ps.fk_entrepot
@@ -215,8 +216,10 @@ class DolibarrAPI {
         warehouse_id: row.warehouse_id,
         warehouse_ref: row.warehouse_ref,
         warehouse_description: row.warehouse_description,
-        stock_reel: parseFloat(row.stock_reel || 0),
-        batch_number: row.batch || "N/A"
+        stock_total: parseFloat(row.stock_total || 0), // Stock total tous lots confondus
+        stock_reel: parseFloat(row.batch_qty || row.stock_total || 0), // Stock du lot spécifique
+        batch_number: row.batch_number || "N/A",
+        batch_id: row.batch_id
       }));
     } catch (error) {
       logger.error(`Failed to fetch data for emplacement ${emplacement}`, { error: error.message });
