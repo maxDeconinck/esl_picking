@@ -89,16 +89,25 @@ router.put("/:id/status", async (req, res) => {
                 // Arrêter le clignotement de l'étiquette
                 await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
 
+                // Colonne associée à éteindre aussi
+                const columnName = device.emplacement.split('.')[0];
+                const columnData = await Device.findByEmplacement(columnName);
+
+                if(columnData && columnData.type === 'colonne') {
+                    await MinewService.blinkTag(columnData.mac, {total: 0, color: 0});
+                    await Device.update(columnData.id, { mode: 1 });
+                }
+
                 // On récupère les dernières informations du produit associé à l'étiquette depuis Dolibarr
                 const product = await DolibarrAPI.getProduct(device.fk_product);
                 const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
 
                 if (!stock || stock.length === 0) {
-                return res.status(404).json({ error: "Stock information not found for the associated product and location" });
+                    return res.status(404).json({ error: "Stock information not found for the associated product and location" });
                 }
 
                 if (!product) {
-                return res.status(404).json({ error: "Associated product not found" });
+                    return res.status(404).json({ error: "Associated product not found" });
                 }
 
                 // On prépare les informations à afficher sur l'étiquette 
@@ -120,8 +129,8 @@ router.put("/:id/status", async (req, res) => {
                     device: device
                 });
               
-              // Remettre l'étiquette en mode inventaire (mode 0)
-              await Device.update(device.id, { mode: 0 });
+              // Remettre l'étiquette en mode inventaire (mode 1)
+              await Device.update(device.id, { mode: 1 });
               
               console.log(`✅ Device ${device.mac} switched back to inventory mode`);
             }
@@ -168,8 +177,8 @@ router.delete("/:id", async (req, res) => {
             // Arrêter le clignotement de l'étiquette
             await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
             
-            // Remettre l'étiquette en mode inventaire (mode 0)
-            await Device.update(device.id, { mode: 0 });
+            // Remettre l'étiquette en mode inventaire (mode 1)
+            await Device.update(device.id, { mode: 1 });
             
             console.log(`✅ Device ${device.mac} switched back to inventory mode`);
           }

@@ -271,6 +271,8 @@ router.post("/button", async (req, res) => {
       return res.status(404).json({ error: "Device not found" });
     }
 
+    console.log(`Button event received from device ${device.id} ${device.mode}`);
+
     if(device.mode === 1) { // Si l'étiquette est en mode picking
       // Chercher un picking actif avec ce produit
       const pickings = await Picking.findAll({ statut: 'en_cours' });
@@ -280,6 +282,7 @@ router.post("/button", async (req, res) => {
       for (const picking of pickings) {
         const details = await Picking.getDetails(picking.id);
         
+        console.log(`Checking picking ${picking.id} with details:`, details);
         // Trouver la ligne de détail correspondant au produit
         const detail = details.find(d => 
           d.fk_product === device.fk_product && 
@@ -288,6 +291,7 @@ router.post("/button", async (req, res) => {
         );
         
         if (detail) {
+          console.log(`Found detail ${detail.id} for product ${device.fk_product} at location ${device.emplacement}`);
           // Incrémenter la quantité prélevée
           await Picking.incrementDetail(detail.id, 1);
           console.log(`✅ Incremented picking ${picking.id}, detail ${detail.id} for product ${device.fk_product}`);
@@ -301,18 +305,11 @@ router.post("/button", async (req, res) => {
             // Arrêter le clignotement de l'étiquette
             await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
             // Remettre l'étiquette en mode normal
-            await Device.update(device.id, { mode: 0 });
+            await Device.update(device.id, { mode: 1 });
           }
           
           break; // On ne traite qu'un seul picking à la fois
         }
-      }
-      
-      if (!updated) {
-        console.warn(`No active picking found for product ${device.fk_product} at emplacement ${device.emplacement}`);
-        // On arrête quand même le clignotement
-        await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
-        await Device.update(device.id, { mode: 0 });
       }
     }
 

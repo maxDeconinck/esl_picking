@@ -127,11 +127,11 @@ router.post("/:id/picking", async (req, res) => {
               const columnData = await Device.findByEmplacement(columnName);
               if(columnData && columnData.type === 'colonne') {
                 await Minew.blinkTag(columnData.mac, {total: 900, color: "cyan"}); // Clignote pendant 15 minutes (60 secondes * 15)
-                await Device.update(columnData.id, { mode: 1 });
+                await Device.update(columnData.id, { mode: 0 });
               }
 
               // Passer l'étiquette en mode picking
-              await Device.update(element.id, { mode: 1 });
+              await Device.update(element.id, { mode: 0 });
 
               console.log('Tag updated for device:', element.mac, { result });
             } else {
