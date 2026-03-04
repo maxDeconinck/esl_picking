@@ -54,6 +54,26 @@ export async function authenticateApiToken(req, res, next) {
   }
 }
 
+export async function authenticateCron(req, res, next) {
+  try {
+    const cronToken = 'ESL_CRON_2026_ML';
+
+    const authParams = req.query.token || req.headers['x-cron-token'];
+
+    if (authParams !== cronToken) {
+      return res.status(401).json({ error: 'Invalid or missing CRON token' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('CRON Token authentication error:', error);
+    res.status(500).json({
+      error: 'Internal server error during CRON authentication'
+    });
+  }
+}
+
 export default {
-  authenticateApiToken
+  authenticateApiToken,
+  authenticateCron
 };

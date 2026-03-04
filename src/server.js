@@ -4,13 +4,14 @@ import dotenv from "dotenv";
 import { testConnection } from "./config/database.js";
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { authenticateApiToken } from "./middleware/apiToken.js";
+import { authenticateApiToken, authenticateCron } from "./middleware/apiToken.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import logger from "./services/Logger.js";
 
 import devicesRoutes from "./routes/devices.routes.js";
 import ordersRoutes from "./routes/orders.routes.js";
 import pickingRoutes from "./routes/picking.routes.js";
+import cronRoutes from "./routes/cron.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,6 +34,7 @@ app.use(requestLogger);
 app.use("/devices", authenticateApiToken, devicesRoutes);
 app.use("/orders", authenticateApiToken, ordersRoutes);
 app.use("/pickings", authenticateApiToken, pickingRoutes);
+app.use("/cron", authenticateCron, cronRoutes);
 
 app.get("/", (req, res) => {
   res.json({ status: "ok", message: "ESL PICKING API" });
