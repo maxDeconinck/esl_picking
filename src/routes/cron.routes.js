@@ -73,9 +73,10 @@ router.get('/update-all-screens', async (req, res) => {
  */
 router.post("/button", async (req, res) => {
   try {
-    req.body = {"mac":"e10000031d63","buttonId":"01","buttonEvent":"01","buttonTime":1770829136661,"opcode":368099704} // Mock de payload pour les tests, à supprimer en production
+    //req.body = {"mac":"e10000031d63","buttonId":"01","buttonEvent":"01","buttonTime":1770829136661,"opcode":368099704} // Mock de payload pour les tests, à supprimer en production
     const { mac, buttonId, buttonEvent, buttonTime } = JSON.parse(JSON.stringify(req.body)); // On stringify pour éviter les problèmes de parsing des logs avec des objets complexes
     // On écrit le payload reçu dans les logs pour debugger les notifications de clics
+    logger.info("Button click received", { mac, buttonId, buttonEvent, buttonTime });
     // Le log : {"mac":"e10000031d63","buttonId":"01","buttonEvent":"01","buttonTime":1770829136661,"opcode":368099704}
 
     if (!mac) {
