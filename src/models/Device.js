@@ -9,7 +9,7 @@ class Device {
   static async findAll() {
     try {
       const [rows] = await pool.execute(
-        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode' FROM DEVICES ORDER BY de_id ASC"
+        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type' FROM DEVICES ORDER BY de_id ASC"
       );
       return rows;
     } catch (error) {
@@ -24,7 +24,7 @@ class Device {
   static async findAffected() {
     try {
       const [rows] = await pool.execute(
-        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode' FROM DEVICES WHERE de_fk_product IS NOT NULL ORDER BY de_id ASC"
+        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type' FROM DEVICES WHERE de_fk_product IS NOT NULL ORDER BY de_id ASC"
       );
       return rows;
     } catch (error) {
@@ -41,7 +41,7 @@ class Device {
   static async findById(id) {
     try {
       const [rows] = await pool.execute(
-        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode' FROM DEVICES WHERE de_id = ?",
+        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type' FROM DEVICES WHERE de_id = ?",
         [id]
       );
       return rows.length > 0 ? rows[0] : null;
@@ -59,7 +59,7 @@ class Device {
   static async findByEmplacement(emplacement) {
     try {
       const [rows] = await pool.execute(
-        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode' FROM DEVICES WHERE de_pos = ?",
+        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type' FROM DEVICES WHERE de_pos = ?",
         [emplacement]
       );
       return rows.length > 0 ? rows[0] : null;

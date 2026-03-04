@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Pickings - ESL Picking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #34495e;
+            margin-bottom: 30px;
+            font-size: 32px;
+            font-weight: 600;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #229954;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #c0392b;
+            transform: translateY(-1px);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+
+        .picking-item {
+            border: 1px solid #ecf0f1;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .picking-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .picking-header {
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: white;
+            transition: background 0.2s;
+        }
+
+        .picking-header:hover {
+            background: #f8f9fa;
+        }
+
+        .picking-header.active {
+            background: #ecf0f1;
+        }
+
+        .picking-info {
+            flex: 1;
+        }
+
+        .picking-ref {
+            font-weight: 600;
+            font-size: 16px;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .picking-meta {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .picking-progress {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .progress-bar {
+            width: 120px;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #27ae60;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-weight: 600;
+            color: #27ae60;
+            font-size: 14px;
+            min-width: 50px;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-en_attente {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .status-en_cours {
+            background: #74b9ff;
+            color: #0984e3;
+        }
+
+        .status-termine {
+            background: #00b894;
+            color: white;
+        }
+
+        .status-annule {
+            background: #dfe6e9;
+            color: #636e72;
+        }
+
+        .picking-details {
+            padding: 20px;
+            background: #f8f9fa;
+            display: none;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .picking-details.open {
+            display: block;
+        }
+
+        .product-list {
+            margin-top: 16px;
+        }
+
+        .product-item {
+            display: grid;
+            grid-template-columns: 1fr 150px 120px 100px;
+            gap: 12px;
+            padding: 12px 16px;
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+            background: white;
+        }
+
+        .product-item.complete {
+            background: #d5f4e6;
+            border-color: #27ae60;
+        }
+
+        .product-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .product-ref {
+            color: #7f8c8d;
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        .product-emplacement {
+            font-family: monospace;
+            background: #ecf0f1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .product-qty {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #95a5a6;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #95a5a6;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d5f4e6;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+
+        .alert-error {
+            background: #ffe5e5;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .product-item {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .picking-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #ecf0f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h1>🎯 Pickings en cours</h1>
+            <a href="/view/devices" style="text-decoration: none;">
+                <button class="btn-primary btn-small">⬅️ Retour à l'accueil</button>
+            </a>
+        </div>
+
+        <!-- Liste des pickings -->
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Liste des pickings</h2>
+                <div class="header-actions">
+                    <button onclick="loadPickings()" class="btn-primary btn-small">🔄 Actualiser</button>
+                </div>
+            </div>
+            <div id="alert-container"></div>
+            <div id="pickings-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let autoRefreshInterval;
+
+        async function apiFetch(url, options = {}) {
+            const TOKEN = localStorage.getItem('apiToken') || '';
+            const response = await fetch(`${API_BASE}${url}`, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Token': TOKEN,
+                    ...options.headers
+                }
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Une erreur est survenue');
+            }
+
+            return response.json();
+        }
+
+        function showAlert(message, type = 'success') {
+            const container = document.getElementById('alert-container');
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        async function loadPickings() {
+            const container = document.getElementById('pickings-list');
+            container.innerHTML = '<div class="loading">Chargement...</div>';
+
+            try {
+                const data = await apiFetch('/pickings');
+                
+                // Filtrer pour n'afficher que les pickings en_attente et en_cours
+                const activePickings = data.pickings.filter(p => 
+                    p.statut === 'en_attente' || p.statut === 'en_cours'
+                );
+                
+                if (activePickings.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+                            <p>Aucun picking en cours</p>
+                            <p style="font-size: 14px; margin-top: 8px;">Démarrez un nouveau picking depuis la <a href="/view/devices">page d'accueil</a></p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = activePickings.map(picking => `
+                    <div class="picking-item" data-id="${picking.id}">
+                        <div class="picking-header" onclick="togglePicking(${picking.id})">
+                            <div class="picking-info">
+                                <div class="picking-ref">Commande ${picking.ref_commande}</div>
+                                <div class="picking-meta">
+                                    ${picking.user_name || 'Non assigné'} • 
+                                    Démarré le ${new Date(picking.date_debut).toLocaleString('fr-FR')}
+                                </div>
+                            </div>
+                            <div class="picking-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${picking.progress}%"></div>
+                                </div>
+                                <span class="progress-text">${picking.products_complete}/${picking.total_products}</span>
+                                <span class="status-badge status-${picking.statut}">${picking.statut === 'en_cours' ? 'En cours' : 'En attente'}</span>
+                            </div>
+                        </div>
+                        <div class="picking-details" id="details-${picking.id}">
+                            <div class="loading">Chargement des détails...</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading pickings:', error);
+                container.innerHTML = `<div class="alert alert-error">Erreur de chargement: ${error.message}</div>`;
+            }
+        }
+
+        async function togglePicking(pickingId) {
+            const detailsDiv = document.getElementById(`details-${pickingId}`);
+            const header = document.querySelector(`[data-id="${pickingId}"] .picking-header`);
+            
+            if (detailsDiv.classList.contains('open')) {
+                detailsDiv.classList.remove('open');
+                header.classList.remove('active');
+                return;
+            }
+
+            // Fermer les autres
+            document.querySelectorAll('.picking-details.open').forEach(el => {
+                el.classList.remove('open');
+            });
+            document.querySelectorAll('.picking-header.active').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            detailsDiv.classList.add('open');
+            header.classList.add('active');
+
+            try {
+                const data = await apiFetch(`/pickings/${pickingId}`);
+                
+                const isComplete = data.picking.statut === 'termine';
+                
+                detailsDiv.innerHTML = `
+                    <div class="product-list">
+                        ${data.details.map(detail => `
+                            <div class="product-item ${detail.statut === 'complete' ? 'complete' : ''}">
+                                <div>
+                                    <div class="product-name">${detail.product_name}</div>
+                                    <div class="product-ref">Ref: ${detail.product_ref}</div>
+                                    ${detail.batch_number ? `<div class="product-ref">Lot: ${detail.batch_number}</div>` : ''}
+                                </div>
+                                <div class="product-emplacement">${detail.emplacement || 'N/A'}</div>
+                                <div class="product-qty">
+                                    ${detail.qty_prelevee} / ${detail.qty_demandee}
+                                </div>
+                                <div>
+                                    <span class="status-badge status-${detail.statut === 'complete' ? 'termine' : 'en_cours'}">
+                                        ${detail.statut === 'complete' ? '✓ Complété' : 'En cours'}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="picking-actions">
+                        ${!isComplete ? `
+                            <button class="btn-success btn-small" onclick="completePicking(${pickingId})">
+                                ✓ Marquer comme terminé
+                            </button>
+                            <button class="btn-danger btn-small" onclick="cancelPicking(${pickingId})">
+                                ✕ Annuler le picking
+                            </button>
+                        ` : `
+                            <button class="btn-danger btn-small" onclick="deletePicking(${pickingId})">
+                                🗑️ Supprimer le picking
+                            </button>
+                        `}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading picking details:', error);
+                detailsDiv.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+            }
+        }
+
+        async function completePicking(pickingId) {
+            if (!confirm('Êtes-vous sûr de vouloir marquer ce picking comme terminé ?')) {
+                return;
+            }
+
+            try {
+                await apiFetch(`/pickings/${pickingId}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ statut: 'termine' })
+                });
+                
+                showAlert('Picking marqué comme terminé !', 'success');
+                loadPickings();
+            } catch (error) {
+                showAlert('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        async function cancelPicking(pickingId) {
+            if (!confirm('Êtes-vous sûr de vouloir annuler ce picking ?')) {
+                return;
+            }
+
+            try {
+                await apiFetch(`/pickings/${pickingId}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ statut: 'annule' })
+                });
+                
+                showAlert('Picking annulé', 'success');
+                loadPickings();
+            } catch (error) {
+                showAlert('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        async function deletePicking(pickingId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce picking ?')) {
+                return;
+            }
+
+            try {
+                await apiFetch(`/pickings/${pickingId}`, {
+                    method: 'DELETE'
+                });
+                
+                showAlert('Picking supprimé', 'success');
+                loadPickings();
+            } catch (error) {
+                showAlert('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        // Auto-refresh toutes les 10 secondes
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(() => {
+                loadPickings();
+            }, 10000);
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        }
+
+        // Charger au démarrage
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPickings();
+            //startAutoRefresh();
+        });
+
+        // Arrêter le rafraîchissement quand on quitte la page
+        window.addEventListener('beforeunload', stopAutoRefresh);
+    </script>
+</body>
+</html>

@@ -139,11 +139,14 @@
     <div class="header">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-md-8">
+                <div class="col-md-6">
                     <h1><i class="fas fa-tags"></i> ESL Picking API - Status</h1>
                     <p class="mb-0">Gestion des étiquettes électroniques</p>
                 </div>
-                <div class="col-md-4 text-end">
+                <div class="col-md-6 text-end">
+                    <a href="/view/pickings" class="btn btn-light me-2" style="font-weight: 600;">
+                        <i class="fas fa-box"></i> Gestion des Pickings
+                    </a>
                     <span class="badge badge-custom status-online">
                         <i class="fas fa-circle"></i> API Online
                     </span>
@@ -207,10 +210,10 @@
             </div>
         </div>
 
-        <!-- Order Picking Simulation Card -->
+        <!-- Order Picking Card -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="fas fa-box"></i> Simulation de Préparation de Commande
+                <i class="fas fa-box"></i> Préparation de Commande
             </div>
             <div class="card-body">
                 <div class="row align-items-end">
@@ -241,6 +244,8 @@
             </div>
         </div>
 
+
+
         <!-- Devices Table Card -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -261,6 +266,7 @@
                                 <th>Emplacement</th>
                                 <th>Produit</th>
                                 <th>Mode</th>
+                                <th>Type</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -422,6 +428,7 @@
                        </a>` 
                     : '<span class="text-muted">-</span>',
                     device.mode === 1 ? '<span class="badge bg-info">Inventaire</span>' : '<span class="badge bg-success">Picking</span>',
+                    device.type ? `<span class="badge bg-secondary">${device.type}</span>` : '<span class="text-muted">-</span>',
                 `<div class="text-center" style="white-space: nowrap;">
                     <button class="action-btn blink" onclick="updateScreenDevice(${device.id})" title="Mettre à jour l'affichage">
                         <i class="fas fa-sync-alt"></i>
@@ -752,6 +759,16 @@
                         `;
                     });
                     resultHtml += '</ul>';
+                }
+
+                // Afficher le lien vers la page picking 
+                if (data.pickingId) {
+                    resultHtml += `
+                        <hr>
+                        <a href="/view/pickings" class="btn btn-primary">
+                            <i class="fas fa-box"></i> Voir le picking
+                        </a>
+                    `;
                 }
 
                 resultHtml += '</div>';

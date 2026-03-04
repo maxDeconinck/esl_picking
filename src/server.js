@@ -10,6 +10,7 @@ import logger from "./services/Logger.js";
 
 import devicesRoutes from "./routes/devices.routes.js";
 import ordersRoutes from "./routes/orders.routes.js";
+import pickingRoutes from "./routes/picking.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,6 +32,7 @@ app.use(requestLogger);
 
 app.use("/devices", authenticateApiToken, devicesRoutes);
 app.use("/orders", authenticateApiToken, ordersRoutes);
+app.use("/pickings", authenticateApiToken, pickingRoutes);
 
 app.get("/", (req, res) => {
   res.json({ status: "ok", message: "ESL PICKING API" });
@@ -39,6 +41,11 @@ app.get("/", (req, res) => {
 // Route pour la page de status
 app.get("/view/devices", (req, res) => {
   res.sendFile(join(__dirname, 'public', 'devices.html'));
+});
+
+// Route pour la page de gestion des pickings
+app.get("/view/pickings", (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'pickings.html'));
 });
 
 // Démarrer le serveur après avoir vérifié la connexion DB

@@ -2,6 +2,7 @@ import express from "express";
 import Device from "../models/Device.js";
 import DolibarrAPI from "../services/DolibarrAPI.js";
 import MinewService from "../services/Minew.js";
+import Picking from "../models/Picking.js";
 
 const router = express.Router();
 
@@ -233,7 +234,7 @@ router.post("/:id/blink", async (req, res) => {
     // Faire clignoter l'étiquette pendant 30 secondes
     const result = await MinewService.blinkTag(device.mac, {
       total: 30,      // 30 clignotements
-      color: "red"
+      color: "cyan"
     });
 
     res.json({
@@ -271,17 +272,47 @@ router.post("/button", async (req, res) => {
     }
 
     if(device.mode === 1) { // Si l'étiquette est en mode picking
-      // On arrête le clignotement de l'étiquette
-      await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
-
-      // On remet l'étiquette en mode normal
-      await Device.update(device.id, { mode: 0 });
-
-      // On décompte le stock dans Dolibarr pour le produit associé à l'étiquette (si fk_product est défini)
-      if(device.fk_product) {
-        // Ici, vous pouvez appeler une méthode de DolibarrAPI pour décompter le stock du produit associé à l'étiquette
-        // Par exemple: await DolibarrAPI.decreaseProductStock(device.fk_product, quantity);
-        console.log(`Décompter le stock pour le produit ${device.fk_product} dans Dolibarr`);
+      // Chercher un picking actif avec ce produit
+      const pickings = await Picking.findAll({ statut: 'en_cours' });
+      
+      let updated = false;
+      
+      for (const picking of pickings) {
+        const details = await Picking.getDetails(picking.id);
+        
+        // Trouver la ligne de détail correspondant au produit
+        const detail = details.find(d => 
+          d.fk_product === device.fk_product && 
+          d.emplacement === device.emplacement &&
+          d.statut !== 'complete'
+        );
+        
+        if (detail) {
+          // Incrémenter la quantité prélevée
+          await Picking.incrementDetail(detail.id, 1);
+          console.log(`✅ Incremented picking ${picking.id}, detail ${detail.id} for product ${device.fk_product}`);
+          updated = true;
+          
+          // Récupérer les détails mis à jour
+          const updatedDetails = await Picking.getDetails(picking.id);
+          const updatedDetail = updatedDetails.find(d => d.id === detail.id);
+          
+          if (updatedDetail && updatedDetail.statut === 'complete') {
+            // Arrêter le clignotement de l'étiquette
+            await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
+            // Remettre l'étiquette en mode normal
+            await Device.update(device.id, { mode: 0 });
+          }
+          
+          break; // On ne traite qu'un seul picking à la fois
+        }
+      }
+      
+      if (!updated) {
+        console.warn(`No active picking found for product ${device.fk_product} at emplacement ${device.emplacement}`);
+        // On arrête quand même le clignotement
+        await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
+        await Device.update(device.id, { mode: 0 });
       }
     }
 
@@ -413,17 +444,16 @@ router.post("/:id/update-screen", async (req, res) => {
     }
 
     // On prépare les informations à afficher sur l'étiquette 
-    let dataEtiquette = await MinewService.addGoodsToStore({
+    await MinewService.addGoodsToStore({
       productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
       lot: stock[0].batch_number || "N/A",
       name: product.label,
       quantity: 0,
       emplacement: device.emplacement,
-      stock: stock[0].stock_reel,
+      stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
       ref: product.ref,
       qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock`
     });
-    console.log('Data prepared for tag display:', dataEtiquette.data)
 
     // On envoie la commande à l'étiquette pour mettre à jour son affichage
     let result = await MinewService.changeTagDisplay(device.mac, {

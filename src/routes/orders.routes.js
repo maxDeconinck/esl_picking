@@ -3,6 +3,7 @@ import Order from "../models/Order.js";
 import logger from "../services/Logger.js";
 import Minew from "../services/Minew.js";
 import Device from "../models/Device.js";
+import Picking from "../models/Picking.js";
 
 const router = express.Router();
 
@@ -70,6 +71,15 @@ router.post("/:id/picking", async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
+    // Créer le picking dans la base de données
+    const pickingId = await Picking.create({
+      fk_commande: order.id,
+      ref_commande: order.ref,
+      fk_user: null,
+      user_name: null,
+      statut: 'en_cours'
+    });
+
     for (const line of order.lines) {
       // Check si une etiquette est associé à ce produit
       const device = await Device.findByProductId(line.fk_product);
@@ -77,6 +87,20 @@ router.post("/:id/picking", async (req, res) => {
         for (const element of device) {
           for (const stock of line.stock_locations) {
             if(stock.warehouse_ref === element.emplacement) {
+              // Ajouter la ligne de détail au picking
+              await Picking.addDetail({
+                fk_picking: pickingId,
+                fk_product: line.fk_product,
+                product_ref: line.product_details.ref,
+                product_name: line.product_details.label,
+                emplacement: element.emplacement,
+                fk_batch: null,
+                batch_number: stock.batch_number || null,
+                fk_warehouse: stock.warehouse_id,
+                qty_demandee: line.quantity,
+                ordre: null
+              });
+
               // Generate data for the tag
               let result = await Minew.addGoodsToStore({
                 productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
@@ -95,7 +119,16 @@ router.post("/:id/picking", async (req, res) => {
               });
 
               // Faire clignoter l'étiquette pour attirer l'attention du préparateur
-              await Minew.blinkTag(element.mac, {total: 300, color: "cyan"}); // Clignote pendant 5 minutes (60 secondes * 5)
+              await Minew.blinkTag(element.mac, {total: 900, color: "cyan"}); // Clignote pendant 15 minutes (60 secondes * 15)
+              
+              // Get Column to blink
+              const columnName = element.emplacement.split('.')[0];
+              logger.info(`Device ${element.mac} associated with product ${line.fk_product} at location ${element.emplacement} will blink column ${columnName} on the tag`, { device: element, stock });
+              const columnData = await Device.findByEmplacement(columnName);
+              if(columnData && columnData.type === 'colonne') {
+                await Minew.blinkTag(columnData.mac, {total: 900, color: "cyan"}); // Clignote pendant 15 minutes (60 secondes * 15)
+                await Device.update(columnData.id, { mode: 1 });
+              }
 
               // Passer l'étiquette en mode picking
               await Device.update(element.id, { mode: 1 });
@@ -109,11 +142,10 @@ router.post("/:id/picking", async (req, res) => {
       }
     }
 
-    // await order.startPicking();
-
     res.json({
       success: true,
       message: "Picking process started for order ID " + orderId,
+      pickingId: pickingId
     });
   } catch (error) {
     logger.error("Error starting picking process:", { error: error.message });
