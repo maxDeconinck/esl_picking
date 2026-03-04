@@ -162,6 +162,8 @@ class Minew {
     let code = '2026214340654272512' // Picking par défaut
     if(mode == "inventory") {
       code = '2026695741933621248'
+    } else if (mode == "picking") {
+      code = '2026214340654272512'
     }
 
     let payload = {

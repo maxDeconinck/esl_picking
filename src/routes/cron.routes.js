@@ -2,6 +2,7 @@ import express from "express";
 import Device from "../models/Device.js";
 import DolibarrAPI from "../services/DolibarrAPI.js";
 import MinewService from "../services/Minew.js";
+import logger from "../services/Logger.js";
 
 const router = express.Router();
 

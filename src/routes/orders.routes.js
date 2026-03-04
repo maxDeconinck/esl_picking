@@ -83,6 +83,7 @@ router.post("/:id/picking", async (req, res) => {
     for (const line of order.lines) {
       // Check si une etiquette est associé à ce produit
       const device = await Device.findByProductId(line.fk_product);
+      console.log(`Checking product ${line.fk_product} for order line ${line.id}, found device:`, device);
       if (device) {
         for (const element of device) {
           for (const stock of line.stock_locations) {
@@ -116,10 +117,14 @@ router.post("/:id/picking", async (req, res) => {
               await Minew.changeTagDisplay(element.mac, {
                 mode: "picking",
                 idData: line.fk_product + '-' + element.emplacement // Id utilisé dans le template pour afficher les bonnes infos
+              }).then( async() => {
+                logger.info(`Tag display updated for device ${element.mac} with product ${line.fk_product} at location ${element.emplacement}`, { device: element, stock });
+                setTimeout(async () => {
+                  await Minew.blinkTag(element.mac, { total: 900, color: "cyan" }); // Arrêter le clignotement après 15 minutes
+                }, 1000 * 60); // 60 secondes pour laisser le temps à l'étiquette de se mettre à jour avant de commencer à clignoter
+              }).catch(error => {
+                logger.error(`Failed to update tag display for device ${element.mac}`, { error: error.message, device: element });
               });
-
-              // Faire clignoter l'étiquette pour attirer l'attention du préparateur
-              await Minew.blinkTag(element.mac, {total: 900, color: "cyan"}); // Clignote pendant 15 minutes (60 secondes * 15)
               
               // Get Column to blink
               const columnName = element.emplacement.split('.')[0];
