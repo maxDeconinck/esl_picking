@@ -239,6 +239,22 @@ class Picking {
   }
 
   /**
+   * Vérifier si un picking a d'autres lignes de détail en cours pour la même rangée 
+   * @param {number} pickingId - ID du picking
+   * @param {string} emplacement - Emplacement à vérifier
+   * @returns {Promise<boolean>}
+   */
+  static async hasOtherPickingForThisRack(pickingId, emplacement) {
+    const query = `
+      SELECT COUNT(*) as total
+      FROM picking_detail
+      WHERE fk_picking = ? AND emplacement = ? AND statut != 'complete'
+    `;
+    const [rows] = await pool.execute(query, [pickingId, emplacement]);
+    return rows[0].total > 0;
+  }
+
+  /**
    * Vérifier si un picking est complet
    * @param {number} pickingId - ID du picking
    * @returns {Promise<boolean>}

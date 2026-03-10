@@ -4,7 +4,7 @@ import logger from "./Logger.js";
 class DolibarrAPI {
   constructor() {
     this.db = pool;
-    this.tablePrefix = process.env.DOLIBARR_TABLE_PREFIX || "llx_";
+    this.tablePrefix = "llx_";
   }
 
   /**
