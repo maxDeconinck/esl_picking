@@ -293,13 +293,12 @@ router.post("/product/:id/blink", async (req, res) => {
       return res.status(404).json({ error: "No devices found for this product" });
     }
 
-    // Faire clignoter toutes les étiquettes associées au produit pendant 45 secondes
+    // Faire clignoter toutes les étiquettes associées au produit pendant 90 secondes
     const results = await Promise.all(
       devices.map(device => {
         if (device.mac) {
-          console.log(`Sending blink command to device ${device.mac} for product ${productId}`);
           return MinewService.blinkTag(device.mac, {
-            total: 45,      // 45 clignotements
+            total: 90,      // 90 clignotements
             color: "magenta"
           });
         } else {

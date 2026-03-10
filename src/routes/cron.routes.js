@@ -195,6 +195,9 @@ router.post("/button", async (req, res) => {
       }
     } else {
       console.log(`Device ${device.mac} clicked but is not in picking mode, no action taken`);
+      
+      // Arrêter le clignotement de l'étiquette
+      await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
     }
 
     res.json({
