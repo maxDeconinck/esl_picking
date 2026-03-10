@@ -110,7 +110,7 @@ router.post("/button", async (req, res) => {
         if (detail) {
           // Incrémenter la quantité prélevée
           await Picking.incrementDetail(detail.id, detail.qty_demandee);
-          console.log(`✅ Incremented picking ${picking.id}, detail ${detail.id} for product ${device.fk_product}`);
+          logger.info(`✅ Incremented picking ${picking.id}, detail ${detail.id} for product ${device.fk_product}`);
           
           
           // Récupérer les détails mis à jour
@@ -123,12 +123,12 @@ router.post("/button", async (req, res) => {
             // Remettre l'étiquette en mode normal
             await Device.update(device.id, { mode: 1 });
 
-            console.log(`✅ Detail ${detail.id} is now complete, updated device ${device.mac} to normal mode`);
+            logger.info(`✅ Detail ${detail.id} is now complete, updated device ${device.mac} to normal mode`);
           }
           
           break; // On ne traite qu'un seul picking à la fois
         } else {
-          console.log(`No matching picking detail found for device ${device.mac} (product ${device.fk_product}, location ${device.emplacement}) in picking ${picking.id}`);
+          logger.info(`No matching picking detail found for device ${device.mac} (product ${device.fk_product}, location ${device.emplacement}) in picking ${picking.id}`);
         }
       }
 
@@ -136,12 +136,12 @@ router.post("/button", async (req, res) => {
       for (const picking of pickings) {
         const details = await Picking.getDetails(picking.id);
         const allComplete = details.every(d => d.statut === 'complete');
-        console.log(`Checking if picking ${picking.id} is complete:`, details.map(d => ({ id: d.id, statut: d.statut })));
+        logger.info(`Checking if picking ${picking.id} is complete:`, details.map(d => ({ id: d.id, statut: d.statut })));
         if (allComplete) {
           // Arrêter le clignotement de toutes les étiquettes associées
           for (const detail of details) {
             const device = await Device.findByEmplacement(detail.emplacement);
-            console.log(`Stopping blink for device with product ${detail.fk_product} at location ${detail.emplacement}`, detail, device);
+            logger.info(`Stopping blink for device with product ${detail.fk_product} at location ${detail.emplacement}`, detail, device);
             if (device) {
               await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
               await Device.update(device.id, { mode: 1 });
@@ -149,11 +149,11 @@ router.post("/button", async (req, res) => {
           }
           // Mettre à jour le statut du picking
           await Picking.update(picking.id, { statut: 'termine' });
-          console.log(`✅ Picking ${picking.id} is now complete`);
+          logger.info(`✅ Picking ${picking.id} is now complete`);
         }
       }
     } else {
-      console.log(`Device ${device.mac} clicked but is not in picking mode, no action taken`);
+      logger.info(`Device ${device.mac} clicked but is not in picking mode, no action taken`);
     }
 
     res.json({
@@ -162,7 +162,7 @@ router.post("/button", async (req, res) => {
       device: Device.format(device),
     });
   } catch (error) {
-    console.error("Error handling button click:", error);
+    logger.error("Error handling button click:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
