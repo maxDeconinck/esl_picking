@@ -3,6 +3,7 @@ import Device from "../models/Device.js";
 import DolibarrAPI from "../services/DolibarrAPI.js";
 import MinewService from "../services/Minew.js";
 import logger from "../services/Logger.js";
+import Picking from "../models/Picking.js";
 
 const router = express.Router();
 
@@ -95,8 +96,6 @@ router.post("/button", async (req, res) => {
       // Chercher un picking actif avec ce produit
       const pickings = await Picking.findAll({ statut: 'en_cours' });
       
-      let updated = false;
-      
       for (const picking of pickings) {
         const details = await Picking.getDetails(picking.id);
         
@@ -112,7 +111,7 @@ router.post("/button", async (req, res) => {
           // Incrémenter la quantité prélevée
           await Picking.incrementDetail(detail.id, detail.qty_demandee);
           console.log(`✅ Incremented picking ${picking.id}, detail ${detail.id} for product ${device.fk_product}`);
-          updated = true;
+          
           
           // Récupérer les détails mis à jour
           const updatedDetails = await Picking.getDetails(picking.id);
@@ -123,11 +122,38 @@ router.post("/button", async (req, res) => {
             await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
             // Remettre l'étiquette en mode normal
             await Device.update(device.id, { mode: 1 });
+
+            console.log(`✅ Detail ${detail.id} is now complete, updated device ${device.mac} to normal mode`);
           }
           
           break; // On ne traite qu'un seul picking à la fois
+        } else {
+          console.log(`No matching picking detail found for device ${device.mac} (product ${device.fk_product}, location ${device.emplacement}) in picking ${picking.id}`);
         }
       }
+
+      // CHeck si la commande est complète et si oui, arrêter le clignotement de toutes les étiquettes associées et passer le picking en statut "complete"
+      for (const picking of pickings) {
+        const details = await Picking.getDetails(picking.id);
+        const allComplete = details.every(d => d.statut === 'complete');
+        console.log(`Checking if picking ${picking.id} is complete:`, details.map(d => ({ id: d.id, statut: d.statut })));
+        if (allComplete) {
+          // Arrêter le clignotement de toutes les étiquettes associées
+          for (const detail of details) {
+            const device = await Device.findByEmplacement(detail.emplacement);
+            console.log(`Stopping blink for device with product ${detail.fk_product} at location ${detail.emplacement}`, detail, device);
+            if (device) {
+              await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
+              await Device.update(device.id, { mode: 1 });
+            }
+          }
+          // Mettre à jour le statut du picking
+          await Picking.update(picking.id, { statut: 'termine' });
+          console.log(`✅ Picking ${picking.id} is now complete`);
+        }
+      }
+    } else {
+      console.log(`Device ${device.mac} clicked but is not in picking mode, no action taken`);
     }
 
     res.json({
