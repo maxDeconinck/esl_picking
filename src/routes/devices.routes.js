@@ -297,6 +297,7 @@ router.post("/product/:id/blink", async (req, res) => {
     const results = await Promise.all(
       devices.map(device => {
         if (device.mac) {
+          console.log(`Sending blink command to device ${device.mac} for product ${productId}`);
           return MinewService.blinkTag(device.mac, {
             total: 45,      // 45 clignotements
             color: "magenta"
