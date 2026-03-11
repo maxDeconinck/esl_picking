@@ -155,11 +155,6 @@ async function getDeviceToBlink(line, device) {
 
 async function prepareESL(pickingId, line, element, stock) {
 
-  if(stock === null) {
-    logger.error(`No warehouse found for stock of product ${line.fk_product} at location ${element.emplacement}`, { stock });
-    return;
-  }
-
   // Ajouter la ligne de détail au picking
   await Picking.addDetail({
     fk_picking: pickingId,

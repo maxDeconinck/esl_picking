@@ -163,7 +163,10 @@ class Picking {
       qty_demandee,
       ordre = null
     } = data;
-    
+
+    // Remplace undefined par null pour éviter l'erreur mysql2
+    const safe = v => v === undefined ? null : v;
+
     const query = `
       INSERT INTO picking_detail (
         fk_picking, fk_product, product_ref, product_name, emplacement,
@@ -172,20 +175,26 @@ class Picking {
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'en_attente', ?)
     `;
-    
-    const [result] = await pool.execute(query, [
-      fk_picking,
-      fk_product,
-      product_ref,
-      product_name,
-      emplacement,
-      fk_batch,
-      batch_number,
-      fk_warehouse,
-      qty_demandee,
-      ordre
-    ]);
-    
+
+    let result;
+    try {
+      [result] = await pool.execute(query, [
+        safe(fk_picking),
+        safe(fk_product),
+        safe(product_ref),
+        safe(product_name),
+        safe(emplacement),
+        safe(fk_batch),
+        safe(batch_number),
+        safe(fk_warehouse),
+        safe(qty_demandee),
+        safe(ordre)
+      ]);
+    } catch (error) {
+      console.error("Error adding picking detail:", error);
+      throw error;
+    }
+
     return result.insertId;
   }
 
