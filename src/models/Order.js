@@ -64,12 +64,14 @@ class Order {
             pb.batch as batch_number,
             pb.eatby as eat_by_date,
             pb.sellby as sell_by_date,
-            pb.qty as batch_qty
+            pb.qty as batch_qty,
+            pl.datec as lot_date
           FROM llx_product_stock ps
           LEFT JOIN llx_entrepot e ON ps.fk_entrepot = e.rowid
           LEFT JOIN llx_product_batch pb ON pb.fk_product_stock = ps.rowid
+          LEFT JOIN llx_product_lot pl ON pb.batch = pl.batch
           WHERE ps.fk_product = ?
-          AND ps.reel > 0
+          AND ps.reel > 0 ORDER BY pl.datec ASC
         `;
 
         const [stockRows] = await pool.execute(stockQuery, [orderRows[i].product_id]);

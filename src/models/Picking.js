@@ -45,6 +45,26 @@ class Picking {
     return rows.length > 0 ? rows[0] : null;
   }
 
+  /** 
+   * Récupérer un picking par l'id de la commande Dolibarr
+   * @param {number} commandeId - ID de la commande Dolibarr
+   * @returns {Promise<Object|null>}
+   */
+  static async findByCommandeId(commandeId) {
+    const query = `
+      SELECT p.*, 
+             COUNT(pd.id) as total_products,
+             SUM(CASE WHEN pd.statut = 'complete' THEN 1 ELSE 0 END) as products_complete
+      FROM picking p
+      LEFT JOIN picking_detail pd ON p.id = pd.fk_picking
+      WHERE p.fk_commande = ? AND (p.statut = 'en_cours' OR p.statut = 'en_attente')
+      GROUP BY p.id
+    `;
+    
+    const [rows] = await pool.execute(query, [commandeId]);
+    return rows.length > 0 ? rows[0] : null;
+  }
+
   /**
    * Récupérer tous les pickings avec filtres
    * @param {Object} filters - Filtres (statut, fk_user, etc.)

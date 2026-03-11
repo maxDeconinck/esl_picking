@@ -71,6 +71,12 @@ router.post("/:id/picking", async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
+    // On vérifie que le picking n'est pas déjà lancé pour cette commande
+    const existingPicking = await Picking.findByCommandeId(order.id);
+    if (existingPicking) {
+      return res.status(400).json({ error: "Picking already exists for this order" });
+    }
+
     // Créer le picking dans la base de données
     const pickingId = await Picking.create({
       fk_commande: order.id,
@@ -83,65 +89,26 @@ router.post("/:id/picking", async (req, res) => {
     for (const line of order.lines) {
       // Check si une etiquette est associé à ce produit
       const device = await Device.findByProductId(line.fk_product);
-      console.log(`Checking product ${line.fk_product} for order line ${line.id}, found device:`, device);
-      if (device) {
-        for (const element of device) {
-          for (const stock of line.stock_locations) {
-            if(stock.warehouse_ref === element.emplacement) {
-              // Ajouter la ligne de détail au picking
-              await Picking.addDetail({
-                fk_picking: pickingId,
-                fk_product: line.fk_product,
-                product_ref: line.product_details.ref,
-                product_name: line.product_details.label,
-                emplacement: element.emplacement,
-                fk_batch: null,
-                batch_number: stock.batch_number || null,
-                fk_warehouse: stock.warehouse_id,
-                qty_demandee: line.quantity,
-                ordre: null
-              });
 
-              // Generate data for the tag
-              let result = await Minew.addGoodsToStore({
-                productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
-                lot: stock.batch_number || "N/A",
-                name: line.product_details.label,
-                quantity: line.quantity,
-                emplacement: element.emplacement,
-                stock: stock.batch_qty,
-                ref: line.product_details.ref
-              });
+      // Pour chaque produit on va chercher le device à allumé en fonction des règles métiers
+      let deviceToBlink = await getDeviceToBlink(line, device);
 
-              // Associer la data au template de l'étiquette
-              await Minew.changeTagDisplay(element.mac, {
-                mode: "picking",
-                idData: line.fk_product + '-' + element.emplacement // Id utilisé dans le template pour afficher les bonnes infos
-              }).then( async() => {
-                logger.info(`Tag display updated for device ${element.mac} with product ${line.fk_product} at location ${element.emplacement}`, { device: element, stock });
-                setTimeout(async () => {
-                  await Minew.blinkTag(element.mac, { total: 900, color: "cyan" }); // Arrêter le clignotement après 15 minutes
-                }, 1000 * 60); // 60 secondes pour laisser le temps à l'étiquette de se mettre à jour avant de commencer à clignoter
-              }).catch(error => {
-                logger.error(`Failed to update tag display for device ${element.mac}`, { error: error.message, device: element });
-              });
-              
-              // Get Column to blink
-              const columnName = element.emplacement.split('.')[0];
-              logger.info(`Device ${element.mac} associated with product ${line.fk_product} at location ${element.emplacement} will blink column ${columnName} on the tag`, { device: element, stock });
-              const columnData = await Device.findByEmplacement(columnName);
-              if(columnData && columnData.type === 'colonne') {
-                await Minew.blinkTag(columnData.mac, {total: 900, color: "cyan"}); // Clignote pendant 15 minutes (60 secondes * 15)
-                await Device.update(columnData.id, { mode: 0 });
-              }
+      console.log(`Device to blink for product ${line.fk_product} on order line ${line.id}:`, deviceToBlink);
 
-              // Passer l'étiquette en mode picking
-              await Device.update(element.id, { mode: 0 });
+      if (deviceToBlink) {
+        for (const element of deviceToBlink) {
 
-              console.log('Tag updated for device:', element.mac, { result });
-            } else {
-              console.log('Stock location does not match device emplacement:', stock.warehouse_ref, element.emplacement);
-            }
+          let stock = line.stock_locations.filter(s => s.warehouse_ref === element.emplacement);
+
+          console.log(`Stock locations for product ${line.fk_product} on order line ${line.id}:`, stock);
+          await prepareESL(pickingId, line, element, stock);
+
+          // Get Column to blink
+          const columnName = element.emplacement.split('.')[0];
+          const columnData = await Device.findByEmplacement(columnName);
+          if(columnData && columnData.type === 'colonne') {
+            await Minew.blinkTag(columnData.mac, {total: 900, color: "cyan"}); // Clignote pendant 15 minutes (60 secondes * 15)
+            await Device.update(columnData.id, { mode: 0 });
           }
         }
       }
@@ -157,5 +124,77 @@ router.post("/:id/picking", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+async function getDeviceToBlink(line, device) {
+  if(device.length == 1) {
+    // On a qu'un seul device associé, on le prend directement
+    return device;
+  } else if (device.length > 1) {
+    // Si on a plusieurs devices associés, on applique les règles métiers pour choisir lequel allumer
+    
+    // Règle 1 : On cherche l'emplacement le plus ancien et on vérifie si il a assez de quantité
+    if(line.stock_locations && line.stock_locations.length > 0) {
+      // Trier les emplacements par date d'entrée en stock (du plus ancien au plus récent)
+      const sortedStock = line.stock_locations.sort((a, b) => new Date(a.lot_date) - new Date(b.lot_date));
+      
+      for(const stock of sortedStock) {
+        if(stock.batch_qty >= line.quantity) {
+          // On trouve un emplacement qui a assez de quantité, on cherche le device associé à cet emplacement
+          const deviceForLocation = device.find(d => d.emplacement === stock.warehouse_ref);
+          if(deviceForLocation) {
+            return [deviceForLocation]; // On retourne le device associé à cet emplacement
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+async function prepareESL(pickingId, line, element, stock) {
+
+  // Ajouter la ligne de détail au picking
+  await Picking.addDetail({
+    fk_picking: pickingId,
+    fk_product: line.fk_product,
+    product_ref: line.product_details.ref,
+    product_name: line.product_details.label,
+    emplacement: element.emplacement,
+    fk_batch: null,
+    batch_number: stock.batch_number || null,
+    fk_warehouse: stock.warehouse_id,
+    qty_demandee: line.quantity,
+    ordre: null
+  });
+
+  // Generate data for the tag
+  let result = await Minew.addGoodsToStore({
+    productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
+    lot: stock.batch_number || "N/A",
+    name: line.product_details.label,
+    quantity: line.quantity,
+    emplacement: element.emplacement,
+    stock: stock.batch_qty,
+    ref: line.product_details.ref
+  });
+
+  console.log('Tag updated for device:', element.mac, { result });
+
+  // Associer la data au template de l'étiquette
+  await Minew.changeTagDisplay(element.mac, {
+    mode: "picking",
+    idData: line.fk_product + '-' + element.emplacement // Id utilisé dans le template pour afficher les bonnes infos
+  }).then( async() => {
+    logger.info(`Tag display updated for device ${element.mac} with product ${line.fk_product} at location ${element.emplacement}`, { device: element, stock });
+    setTimeout(async () => {
+      await Minew.blinkTag(element.mac, { total: 900, color: "cyan" }); // Arrêter le clignotement après 15 minutes
+    }, 1000 * 60); // 60 secondes pour laisser le temps à l'étiquette de se mettre à jour avant de commencer à clignoter
+  }).catch(error => {
+    logger.error(`Failed to update tag display for device ${element.mac}`, { error: error.message, device: element });
+  });
+
+  // Passer l'étiquette en mode picking
+  await Device.update(element.id, { mode: 0 });
+}
 
 export default router;

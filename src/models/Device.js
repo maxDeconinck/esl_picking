@@ -138,7 +138,7 @@ class Device {
       }
       if (emplacement !== undefined) {
         fields.push("de_pos = ?");
-        values.push(emplacement);
+        values.push(emplacement.toUpperCase());
       }
       if (fk_product !== undefined) {
         fields.push("de_fk_product = ?");
