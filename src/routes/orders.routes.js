@@ -154,8 +154,7 @@ async function getDeviceToBlink(line, device) {
 }
 
 async function prepareESL(pickingId, line, element, stock) {
-  console.log(`Stock locations for product ${line.fk_product} on order line ${line.id}:`, stock);
-  return false;
+
   // Ajouter la ligne de détail au picking
   await Picking.addDetail({
     fk_picking: pickingId,
