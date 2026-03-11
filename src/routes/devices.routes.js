@@ -288,7 +288,6 @@ router.post("/emplacement/:id/blink", async (req, res) => {
   try {
     const emplacement = req.params.id;
     const device = await Device.findByEmplacement(emplacement);
-    console.log("Device found for emplacement:", device);
 
     if (!device) {
       return res.status(404).json({ error: "No device found for this emplacement" });
@@ -298,11 +297,7 @@ router.post("/emplacement/:id/blink", async (req, res) => {
       return res.status(400).json({ error: "Device has no MAC address" });
     }
 
-    if (devices.length === 0) {
-      return res.status(404).json({ error: "No devices found for this emplacement" });
-    }
-
-    MinewService.blinkTagByPosition(emplacement, {
+    MinewService.blinkTag(device.mac, {
       total: 90,      // 90 clignotements
       color: "magenta"
     });
