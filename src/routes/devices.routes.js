@@ -284,6 +284,45 @@ router.patch("/:id/detach", async (req, res) => {
  * POST /devices/product/:id/blink
  * Faire clignoter toutes les étiquettes associées à un produit donné
  */
+router.post("/emplacement/:id/blink", async (req, res) => {
+  try {
+    const emplacement = parseInt(req.params.id, 10);
+    const devices = await Device.findByEmplacement(emplacement);
+
+    if (devices.length === 0) {
+      return res.status(404).json({ error: "No devices found for this emplacement" });
+    }
+
+    // Faire clignoter toutes les étiquettes associées à l'emplacement pendant 90 secondes
+    const results = await Promise.all(
+      devices.map(device => {
+        if (device.mac) {
+          return MinewService.blinkTag(device.mac, {
+            total: 90,      // 90 clignotements
+            color: "magenta"
+          });
+        } else {
+          return null;
+        }
+      })
+    );
+
+    res.json({
+      success: true,
+      message: "Blink commands sent successfully to all associated devices",
+      devices: devices.map(Device.format),
+      results: results
+    });
+  } catch (error) {
+    console.error("Error blinking devices for emplacement:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
+/**
+ * POST /devices/product/:id/blink
+ * Faire clignoter toutes les étiquettes associées à un produit donné
+ */
 router.post("/product/:id/blink", async (req, res) => {
   try {
     const productId = parseInt(req.params.id, 10);
