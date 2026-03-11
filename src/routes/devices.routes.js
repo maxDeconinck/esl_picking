@@ -287,6 +287,7 @@ router.patch("/:id/detach", async (req, res) => {
 router.post("/emplacement/:id/blink", async (req, res) => {
   try {
     const emplacement = req.params.id;
+    console.log(`Blinking devices for emplacement: ${emplacement}`);
     const devices = await Device.findByEmplacement(emplacement);
 
     if (devices.length === 0) {
