@@ -287,26 +287,25 @@ router.patch("/:id/detach", async (req, res) => {
 router.post("/emplacement/:id/blink", async (req, res) => {
   try {
     const emplacement = req.params.id;
-    console.log(`Blinking devices for emplacement: ${emplacement}`);
-    const devices = await Device.findByEmplacement(emplacement);
+    const device = await Device.findByEmplacement(emplacement);
+    console.log("Device found for emplacement:", device);
+
+    if (!device) {
+      return res.status(404).json({ error: "No device found for this emplacement" });
+    }
+
+    if (!device.mac) {
+      return res.status(400).json({ error: "Device has no MAC address" });
+    }
 
     if (devices.length === 0) {
       return res.status(404).json({ error: "No devices found for this emplacement" });
     }
 
-    // Faire clignoter toutes les étiquettes associées à l'emplacement pendant 90 secondes
-    const results = await Promise.all(
-      devices.map(device => {
-        if (device.mac) {
-          return MinewService.blinkTag(device.mac, {
-            total: 90,      // 90 clignotements
-            color: "magenta"
-          });
-        } else {
-          return null;
-        }
-      })
-    );
+    MinewService.blinkTagByPosition(emplacement, {
+      total: 90,      // 90 clignotements
+      color: "magenta"
+    });
 
     res.json({
       success: true,
