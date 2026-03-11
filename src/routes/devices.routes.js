@@ -297,7 +297,7 @@ router.post("/emplacement/:id/blink", async (req, res) => {
       return res.status(400).json({ error: "Device has no MAC address" });
     }
 
-    MinewService.blinkTag(device.mac, {
+    const results = await MinewService.blinkTag(device.mac, {
       total: 90,      // 90 clignotements
       color: "magenta"
     });
