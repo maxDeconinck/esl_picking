@@ -305,7 +305,7 @@ router.post("/emplacement/:id/blink", async (req, res) => {
     res.json({
       success: true,
       message: "Blink commands sent successfully to all associated devices",
-      devices: devices.map(Device.format),
+      device: Device.format(device),
       results: results
     });
   } catch (error) {
