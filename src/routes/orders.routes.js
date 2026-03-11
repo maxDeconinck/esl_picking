@@ -93,22 +93,24 @@ router.post("/:id/picking", async (req, res) => {
       // Pour chaque produit on va chercher le device à allumé en fonction des règles métiers
       let deviceToBlink = await getDeviceToBlink(line, device);
 
-      console.log(`Device to blink for product ${line.fk_product} on order line ${line.id}:`, deviceToBlink);
+      // console.log(`Device to blink for product ${line.fk_product} on order line ${line.id}:`, deviceToBlink, line.stock_locations);
 
-      if (deviceToBlink) {
+      if (deviceToBlink && deviceToBlink.length > 0) {
         for (const element of deviceToBlink) {
 
           let stock = line.stock_locations.filter(s => s.warehouse_ref === element.emplacement);
+          if(stock.length > 0){
+            await prepareESL(pickingId, line, element, stock);
 
-          console.log(`Stock locations for product ${line.fk_product} on order line ${line.id}:`, stock);
-          await prepareESL(pickingId, line, element, stock);
-
-          // Get Column to blink
-          const columnName = element.emplacement.split('.')[0];
-          const columnData = await Device.findByEmplacement(columnName);
-          if(columnData && columnData.type === 'colonne') {
-            await Minew.blinkTag(columnData.mac, {total: 900, color: "cyan"}); // Clignote pendant 15 minutes (60 secondes * 15)
-            await Device.update(columnData.id, { mode: 0 });
+            // Get Column to blink
+            const columnName = element.emplacement.split('.')[0];
+            const columnData = await Device.findByEmplacement(columnName);
+            if(columnData && columnData.type === 'colonne') {
+              await Minew.blinkTag(columnData.mac, {total: 900, color: "cyan"}); // Clignote pendant 15 minutes (60 secondes * 15)
+              await Device.update(columnData.id, { mode: 0 });
+            }
+          } else {
+            console.log(`No stock found for product ${line.fk_product} at location ${element.emplacement}`, { stock: line.stock_locations, element });
           }
         }
       }
@@ -152,7 +154,8 @@ async function getDeviceToBlink(line, device) {
 }
 
 async function prepareESL(pickingId, line, element, stock) {
-
+  console.log(`Stock locations for product ${line.fk_product} on order line ${line.id}:`, stock);
+  return false;
   // Ajouter la ligne de détail au picking
   await Picking.addDetail({
     fk_picking: pickingId,
