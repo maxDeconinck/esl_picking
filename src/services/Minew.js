@@ -98,6 +98,18 @@ class Minew {
       return res.data
     } catch (err) {
       this.logger.error(`MinewService: error sending blinkTag command to tag ${tagId}`, err?.response?.data || err.message || err)
+
+      // On retry la commande une seconde fois
+      try {
+        const res = await axios.get(url, {
+          headers: { Token: token },
+          timeout: 10000
+        })
+        this.logger.info(`MinewService: blinkTag command retry sent to tag ${tagId}`, { response: res.data })
+        return res.data
+      } catch (err) {
+        this.logger.error(`MinewService: error on retry sending blinkTag command to tag ${tagId}`, err?.response?.data || err.message || err)
+      }
       throw err
     }
   }
@@ -151,6 +163,17 @@ class Minew {
       return res.data
     } catch (err) {
       this.logger.error('MinewService: error sending addGoodsToStore command', err?.response?.data || err.message || err)
+      // On retry une seconde fois
+      try {
+        const res = await axios.post(url, payload, {
+          headers: { Token: token, 'Content-Type': 'application/json' },
+          timeout: 10000
+        })
+        this.logger.info('MinewService: addGoodsToStore command retry sent', { response: res.data })
+        return res.data
+      } catch (err) {
+        this.logger.error('MinewService: error on retry sending addGoodsToStore command', err?.response?.data || err.message || err)
+      }
       throw err
     }
   }
@@ -188,6 +211,17 @@ class Minew {
       return res.data
     } catch (err) {
       this.logger.error(`MinewService: error sending changeTagDisplay command to tag ${tagId}`, err?.response?.data || err.message || err)
+      // On retry une seconde fois
+      try {         
+        const res = await axios.post(url, payload,{
+          headers: { Token: token },
+          timeout: 10000
+        })
+        this.logger.info(`MinewService: changeTagDisplay command retry sent to tag ${tagId}`, { response: res.data })
+        return res.data
+      } catch (err) {
+        this.logger.error(`MinewService: error on retry sending changeTagDisplay command to tag ${tagId}`, err?.response?.data || err.message || err)
+      }
       throw err
     }
   }
