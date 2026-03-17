@@ -105,6 +105,26 @@ class Picking {
   }
 
   /**
+   * Récupérer les pickings bloqués depuis plus de x minutes
+   * @param {number} minutes - Nombre de minutes
+   * @returns {Promise<Array>}
+   */
+  static async findStuckPickings(minutes) {
+    const query = `
+      SELECT p.*, 
+             COUNT(pd.id) as total_products,
+             SUM(CASE WHEN pd.statut = 'complete' THEN 1 ELSE 0 END) as products_complete
+      FROM picking p
+      LEFT JOIN picking_detail pd ON p.id = pd.fk_picking
+      WHERE p.date_debut < (NOW() - INTERVAL ? MINUTE) AND p.statut NOT IN ('termine', 'annule')
+      GROUP BY p.id
+    `;
+    
+    const [rows] = await pool.execute(query, [minutes]);
+    return rows;
+  }
+
+  /**
    * Mettre à jour un picking
    * @param {number} id - ID du picking
    * @param {Object} data - Données à mettre à jour

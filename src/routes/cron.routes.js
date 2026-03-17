@@ -211,4 +211,75 @@ router.post("/button", async (req, res) => {
   }
 });
 
+/**
+ * Vérifier si un picking n'est pas resté bloqué en mode picking (par exemple à cause d'un oubli de l'opérateur de cliquer sur l'étiquette pour valider le prélèvement). On peut exécuter cette route via un cron toutes les heures par exemple pour s'assurer que les étiquettes ne restent pas bloquées en mode picking indéfiniment.
+ */
+router.post('/check-stuck-pickings', async (req, res) => {
+  try {
+    const stuckPickings = await Picking.findStuckPickings(60); // Trouver les pickings qui sont en cours depuis plus de 60 minutes
+
+    for (const picking of stuckPickings) {
+      const details = await Picking.getDetails(picking.id);
+      picking.details = details; // Ajouter les détails au picking pour le logging
+
+      console.warn(`Found stuck picking ${picking.id} (started at ${picking.date_debut}), resetting associated devices`, { picking });
+
+      for (const detail of details) {
+        const device = await Device.findByEmplacement(detail.emplacement);
+        if (device) {
+          await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
+
+          // On récupère les dernières informations du produit associé à l'étiquette depuis Dolibarr
+          const product = await DolibarrAPI.getProduct(device.fk_product);
+          const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
+
+          if (!stock || stock.length === 0) {
+              console.warn(`Stock information not found for product ${device.fk_product} at location ${device.emplacement}, skipping device ${device.id}`);
+              continue;
+          }
+
+          if (!product) {
+              console.warn(`Associated product not found for product ID ${device.fk_product}, skipping device ${device.id}`);
+              continue;
+          }
+
+          // On prépare les informations à afficher sur l'étiquette 
+          await MinewService.addGoodsToStore({
+              productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
+              lot: stock[0].batch_number || "N/A",
+              name: product.label,
+              quantity: 0,
+              emplacement: device.emplacement,
+              stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
+              ref: product.ref,
+              qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
+          });
+
+          // On envoie la commande à l'étiquette pour mettre à jour son affichage
+          await MinewService.changeTagDisplay(device.mac, {
+              idData: device.fk_product + '-' + device.emplacement, // Id utilisé dans le template pour afficher les bonnes infos
+              mode: "inventory", // Choix du template selon le mode de l'étiquette
+              device: device
+          });
+          
+          await Device.update(device.id, { mode: 1 });
+          console.log(`✅ Updated device ${device.mac} to normal mode as part of stuck picking reset`);
+        }
+      }
+
+      // Optionnellement, on peut aussi marquer le picking comme annulé ou terminé pour éviter de le traiter à nouveau
+      await Picking.update(picking.id, { statut: 'annule', date_fin: new Date() });
+      console.log(`Marked stuck picking ${picking.id} as cancelled`);
+    }
+
+    res.json({
+      success: true,
+      message: `Checked for stuck pickings and reset ${stuckPickings.length} pickings if needed`
+    });
+  } catch (error) {
+    logger.error("Error checking for stuck pickings:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
