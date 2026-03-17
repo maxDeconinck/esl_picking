@@ -214,7 +214,7 @@ router.post("/button", async (req, res) => {
 /**
  * Vérifier si un picking n'est pas resté bloqué en mode picking (par exemple à cause d'un oubli de l'opérateur de cliquer sur l'étiquette pour valider le prélèvement). On peut exécuter cette route via un cron toutes les heures par exemple pour s'assurer que les étiquettes ne restent pas bloquées en mode picking indéfiniment.
  */
-router.post('/check-stuck-pickings', async (req, res) => {
+router.get('/check-stuck-pickings', async (req, res) => {
   try {
     const stuckPickings = await Picking.findStuckPickings(60); // Trouver les pickings qui sont en cours depuis plus de 60 minutes
 
