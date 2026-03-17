@@ -65,7 +65,7 @@ router.get("/order/:orderId", async (req, res) => {
   try {
     const orderId = parseInt(req.params.orderId);
     
-    const picking = await Picking.findByOrderId(orderId);
+    const picking = await Picking.findByCommandeId(orderId);
     
     if (!picking) {
       return res.status(404).json({ error: "Picking not found" });
