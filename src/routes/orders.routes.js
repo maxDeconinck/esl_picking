@@ -154,6 +154,10 @@ async function getDeviceToBlink(line, device) {
 }
 
 async function prepareESL(pickingId, line, element, stock) {
+  if(element.emplacement && element.emplacement.includes('FU.')){
+    // Il faut afficher le nombre de maillon et de brin dans la quantité à prélevé pour les produits de type câble (FU.)
+    console.log(element, line);
+  }
 
   // Ajouter la ligne de détail au picking
   await Picking.addDetail({
@@ -190,7 +194,7 @@ async function prepareESL(pickingId, line, element, stock) {
     logger.info(`Tag display updated for device ${element.mac} with product ${line.fk_product} at location ${element.emplacement}`, { device: element, stock });
     setTimeout(async () => {
       await Minew.blinkTag(element.mac, { total: 900, color: "cyan" }); // Arrêter le clignotement après 15 minutes
-    }, 1000 * 60); // 60 secondes pour laisser le temps à l'étiquette de se mettre à jour avant de commencer à clignoter
+    }, 1000 * 90); // 90 secondes pour laisser le temps à l'étiquette de se mettre à jour avant de commencer à clignoter
   }).catch(error => {
     logger.error(`Failed to update tag display for device ${element.mac}`, { error: error.message, device: element });
   });
