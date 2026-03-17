@@ -58,6 +58,34 @@ router.get("/:id", async (req, res) => {
 });
 
 /**
+ * Récupérer un picking via son id de commande Dolibarr
+ * GET /pickings/order/:orderId
+ */
+router.get("/order/:orderId", async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.orderId);
+    
+    const picking = await Picking.findByOrderId(orderId);
+    
+    if (!picking) {
+      return res.status(404).json({ error: "Picking not found" });
+    }
+    
+    const details = await Picking.getDetails(picking.id);
+    
+    res.json({
+      success: true,
+      picking: Picking.format(picking),
+      details: details
+    });
+  } catch (error) {
+    console.error("Error fetching picking by order ID:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+/**
  * PUT /pickings/:id/status
  * Mettre à jour le statut d'un picking
  */
