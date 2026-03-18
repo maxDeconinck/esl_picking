@@ -174,30 +174,23 @@ async function prepareESL(pickingId, line, element, stock) {
   });
 
   // Generate data for the tag
-  let result = await Minew.addGoodsToStore({
+  let result = await Minew.refreshGoodsInStore({
     productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
     lot: stock.batch_number || "N/A",
     name: line.product_details.label,
     quantity: line.quantity,
     emplacement: element.emplacement,
     stock: stock.batch_qty,
-    ref: line.product_details.ref
+    ref: line.product_details.ref,
+    mode : "A prélever",
   });
 
   console.log('Tag updated for device:', element.mac, { result });
 
-  // Associer la data au template de l'étiquette
-  await Minew.changeTagDisplay(element.mac, {
-    mode: "picking",
-    idData: line.fk_product + '-' + element.emplacement // Id utilisé dans le template pour afficher les bonnes infos
-  }).then( async() => {
-    logger.info(`Tag display updated for device ${element.mac} with product ${line.fk_product} at location ${element.emplacement}`, { device: element, stock });
-    setTimeout(async () => {
+  setTimeout(async () => {
       await Minew.blinkTag(element.mac, { total: 900, color: "cyan" }); // Arrêter le clignotement après 15 minutes
-    }, 1000 * 90); // 90 secondes pour laisser le temps à l'étiquette de se mettre à jour avant de commencer à clignoter
-  }).catch(error => {
-    logger.error(`Failed to update tag display for device ${element.mac}`, { error: error.message, device: element });
-  });
+    }, 1000 * 10);
+    
 
   // Passer l'étiquette en mode picking
   await Device.update(element.id, { mode: 0 });

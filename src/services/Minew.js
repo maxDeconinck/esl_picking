@@ -185,7 +185,8 @@ class Minew {
       id: data.productId,
       storeId: this.storeId,
       quantity: data.quantity,
-      stock: data.stock
+      stock: data.stock,
+      mode : data.mode || "Disponible"
     }
     try {
       const res = await axios.post(url, payload, {
