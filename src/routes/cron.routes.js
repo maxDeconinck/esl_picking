@@ -125,68 +125,6 @@ router.post("/button", async (req, res) => {
             if(await Picking.hasOtherPickingForThisRack(picking.id, rack) === false) {
               await MinewService.blinkTagByPosition(rack, { total: 0, color: 0 }); // On éteint la colonne
             }
-
-            // On récupère les dernières informations du produit associé à l'étiquette depuis Dolibarr
-            const product = await DolibarrAPI.getProduct(device.fk_product);
-            const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
-
-            if (!stock || stock.length === 0) {
-              return res.status(404).json({ error: "Stock information not found for the associated product and location" });
-            }
-
-            if (!product) {
-              return res.status(404).json({ error: "Associated product not found" });
-            }
-
-            // On prépare les informations à afficher sur l'étiquette 
-            await MinewService.addGoodsToStore({
-              productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
-              lot: stock[0].batch_number || "N/A",
-              name: product.label,
-              quantity: 0,
-              emplacement: device.emplacement,
-              stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
-              ref: product.ref,
-              qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
-            });
-
-            // On envoie la commande à l'étiquette pour mettre à jour son affichage
-            await MinewService.changeTagDisplay(device.mac, {
-              idData: device.fk_product + '-' + device.emplacement, // Id utilisé dans le template pour afficher les bonnes infos
-              mode: "inventory", // Choix du template selon le mode de l'étiquette
-              device: device
-            });
-            console.log(`✅ Detail ${detail.id} is now complete, updated device ${device.mac} to normal mode`);
-            
-            // Check si c'est le dernier détail du picking, si oui on peut marquer le picking comme terminé
-            const isPickingComplete = updatedDetails.every(d => d.statut === 'complete');
-            if (isPickingComplete) {
-              await Picking.update(picking.id, { statut: 'complete', date_fin: new Date() });
-              console.log(`🎉 Picking ${picking.id} is now complete!`);
-
-              // Par sécurité on éteint tout les équipements du picking (dans le cas où il y en aurait plusieurs avec des produits différents)
-              for (const d of updatedDetails) {
-                const dDevice = await Device.findByEmplacement(d.emplacement);
-                if (dDevice) {
-                  await MinewService.blinkTag(dDevice.mac, { total: 0, color: 0 });
-                  await Device.update(dDevice.id, { mode: 1 });
-                  console.log(`✅ Updated device ${dDevice.mac} to normal mode as part of picking completion`);
-                }
-              }
-            }
-          }
-
-          // On check si le picking est en terminé et si c'est la cas on éteint tout les équipements du picking (dans le cas où il y en aurait plusieurs avec des produits différents)
-          if(await Picking.isComplete(picking.id)) {
-            const emplacements = await Picking.getEmplacements(picking.id);
-            for (const emplacement of emplacements) {
-              const dDevice = await Device.findByEmplacement(emplacement);
-              if (dDevice) {
-                await MinewService.blinkTag(dDevice.mac, { total: 0, color: 0 });
-                await Device.update(dDevice.id, { mode: 1 });
-                console.log(`✅ Updated device ${dDevice.mac} to normal mode as part of picking completion`);
-              }
-            }
           }
           
           break; // On ne traite qu'un seul picking à la fois

@@ -178,7 +178,7 @@ async function prepareESL(pickingId, line, element, stock) {
     productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
     lot: stock.batch_number || "N/A",
     name: line.product_details.label,
-    quantity: line.quantity,
+    quantity: line.quantity + ' (' + stock.batch_qty + ' en stock)',
     emplacement: element.emplacement,
     stock: stock.batch_qty,
     ref: line.product_details.ref,
