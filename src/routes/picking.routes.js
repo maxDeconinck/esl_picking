@@ -142,22 +142,27 @@ router.put("/:id/status", async (req, res) => {
                     return res.status(404).json({ error: "Associated product not found" });
                 }
 
+                
                 // On prépare les informations à afficher sur l'étiquette 
-                await MinewService.refreshGoodsInStore({
-                    productId: device.fk_product + '-' + device.emplacement,
-                    lot: stock[0].batch_number || "N/A",
-                    name: product.label,
-                    quantity: 0,
-                    emplacement: device.emplacement,
-                    stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
-                    ref: product.ref,
-                    qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
-                });
+                setTimeout(async () => {
+                  await MinewService.refreshGoodsInStore({
+                      productId: device.fk_product + '-' + device.emplacement,
+                      lot: stock[0].batch_number || "N/A",
+                      name: product.label,
+                      quantity: 0,
+                      emplacement: device.emplacement,
+                      stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
+                      ref: product.ref,
+                      qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
+                  });
+                  await setTimeout(async () => {
+                    await Minew.blinkTag(element.mac, { total: 0, color: 0 }); // Arrêter le clignotement au cas où le premier arrêt ne fonctionne pas
+                    await Device.update(device.id, { mode: 1 });
+                    console.log(`✅ Device ${device.mac} screen refreshed and switched back to inventory mode`);
+                  }, 45000);
+                }, 100 * Math.floor(Math.random() * (25 - 6 + 1) + 9)); // Rafraîchir l'écran après un délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
               
-              // Remettre l'étiquette en mode inventaire (mode 1)
-              await Device.update(device.id, { mode: 1 });
-              
-              console.log(`✅ Device ${device.mac} switched back to inventory mode`);
+                console.log(`✅ Device ${device.mac} switched back to inventory mode`);
             }
           }
         }
