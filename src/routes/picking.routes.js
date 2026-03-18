@@ -144,7 +144,7 @@ router.put("/:id/status", async (req, res) => {
 
 
                 setTimeout(async () => {
-                  await Minew.blinkTag(element.mac, { total: 0, color: 0 }); // Arrêter le clignotement au cas où le premier arrêt ne fonctionne pas
+                  await MinewService.blinkTag(device.mac, { total: 0, color: 0 }); // Arrêter le clignotement au cas où le premier arrêt ne fonctionne pas
                   await Device.update(device.id, { mode: 1 });
                   console.log(`✅ Device ${device.mac} screen refreshed and switched back to inventory mode`);
                 }, 100 * Math.floor(Math.random() * (25 - 6 + 1) + 9)); // Rafraîchir l'écran après un délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
