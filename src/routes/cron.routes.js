@@ -83,10 +83,9 @@ router.post("/button", async (req, res) => {
     // Arrêter le clignotement de l'étiquette
     await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
 
-
     if(device.mode === 0) { // Si l'étiquette est en mode picking
       // Chercher un picking actif avec ce produit
-      const pickings = await Picking.findAll({ statut: 'en_cours' });
+      const pickings = await Picking.findAll({ statut: 'en_cours', emplacement: device.emplacement });
       
       for (const picking of pickings) {
         const details = await Picking.getDetails(picking.id);

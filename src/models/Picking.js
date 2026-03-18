@@ -93,6 +93,11 @@ class Picking {
       conditions.push('p.fk_user = ?');
       params.push(filters.fk_user);
     }
+
+    if(filters.emplacement){
+      conditions.push('EXISTS (SELECT 1 FROM picking_detail pd2 WHERE pd2.fk_picking = p.id AND pd2.emplacement = ?)');
+      params.push(filters.emplacement);
+    }
     
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
@@ -297,9 +302,9 @@ class Picking {
     const query = `
       SELECT COUNT(*) as total
       FROM picking_detail
-      WHERE fk_picking = ? AND emplacement = ? AND statut != 'complete'
+      WHERE fk_picking = ? AND emplacement LIKE ? AND statut = 'en_attente'
     `;
-    const [rows] = await pool.execute(query, [pickingId, emplacement]);
+    const [rows] = await pool.execute(query, [pickingId, `${emplacement}%`]);
     return rows[0].total > 0;
   }
 
