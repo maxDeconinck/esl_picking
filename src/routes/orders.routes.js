@@ -99,6 +99,7 @@ router.post("/:id/picking", async (req, res) => {
         for (const element of deviceToBlink) {
 
           let stock = line.stock_locations.filter(s => s.warehouse_ref === element.emplacement);
+          console.log(`Stock for product ${line.fk_product} at location ${element.emplacement}:`, stock);
           if(stock.length > 0){
             await prepareESL(pickingId, line, element, stock);
 
