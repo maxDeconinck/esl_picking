@@ -159,9 +159,6 @@ async function prepareESL(pickingId, line, element, stock) {
     console.log(element, line);
   }
 
-  console.log('Stock received:', stock);
-  return;
-
   // Ajouter la ligne de détail au picking
   await Picking.addDetail({
     fk_picking: pickingId,
@@ -170,8 +167,8 @@ async function prepareESL(pickingId, line, element, stock) {
     product_name: line.product_details.label,
     emplacement: element.emplacement,
     fk_batch: null,
-    batch_number: stock.batch_number || null,
-    fk_warehouse: stock.warehouse_id,
+    batch_number: stock[0].batch_number || null,
+    fk_warehouse: stock[0].warehouse_id,
     qty_demandee: line.quantity,
     ordre: null
   });
@@ -179,11 +176,11 @@ async function prepareESL(pickingId, line, element, stock) {
   // Generate data for the tag
   let result = await Minew.refreshGoodsInStore({
     productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
-    lot: stock.batch_number || "N/A",
+    lot: stock[0].batch_number || "N/A",
     name: line.product_details.label,
-    quantity: line.quantity + ' (' + stock.batch_qty + ' en stock)',
+    quantity: line.quantity + ' (' + stock[0].batch_qty + ' en stock)',
     emplacement: element.emplacement,
-    stock: stock.batch_qty,
+    stock: stock[0].batch_qty,
     ref: line.product_details.ref,
     mode : "A prélever",
   });
