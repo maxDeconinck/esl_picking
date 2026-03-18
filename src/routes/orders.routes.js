@@ -173,8 +173,9 @@ async function prepareESL(pickingId, line, element, stock) {
     ordre: null
   });
 
-
-  await Minew.blinkTag(element.mac, { total: 900, color: "cyan" }); // Arrêter le clignotement après 15 minutes    
+  setTimeout(async () => {
+    await Minew.blinkTag(element.mac, { total: 900, color: "cyan" }); // Arrêter le clignotement après 15 minutes    
+  }, 10 * Math.floor(Math.random() * (30 - 5 + 1) + 5)); // Délai aléatoire entre 300 et 900 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
 
   // Generate data for the tag
   setTimeout(async () => {
