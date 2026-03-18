@@ -31,7 +31,7 @@ router.get('/update-all-screens', async (req, res) => {
           }
 
           // On prépare les informations à afficher sur l'étiquette 
-          await MinewService.addGoodsToStore({
+          await MinewService.refreshGoodsInStore({
               productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
               lot: stock[0].batch_number || "N/A",
               name: product.label,
@@ -40,13 +40,6 @@ router.get('/update-all-screens', async (req, res) => {
               stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
               ref: product.ref,
               qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
-          });
-
-          // On envoie la commande à l'étiquette pour mettre à jour son affichage
-          await MinewService.changeTagDisplay(device.mac, {
-              idData: device.fk_product + '-' + device.emplacement, // Id utilisé dans le template pour afficher les bonnes infos
-              mode: "inventory", // Choix du template selon le mode de l'étiquette
-              device: device
           });
         
           // Remettre l'étiquette en mode inventaire (mode 1)
@@ -126,7 +119,7 @@ router.post("/button", async (req, res) => {
               await MinewService.blinkTagByPosition(rack, { total: 0, color: 0 }); // On éteint la colonne
             }
           }
-          
+
           break; // On ne traite qu'un seul picking à la fois
         } else {
           console.log(`No matching picking detail found for device ${device.mac} (product ${device.fk_product}, location ${device.emplacement}) in picking ${picking.id}`);

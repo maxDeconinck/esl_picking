@@ -178,9 +178,9 @@ async function prepareESL(pickingId, line, element, stock) {
     productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
     lot: stock[0].batch_number || "N/A",
     name: line.product_details.label,
-    quantity: line.quantity + ' (' + stock[0].batch_qty + ' en stock)',
+    quantity: line.quantity,
     emplacement: element.emplacement,
-    stock: stock[0].batch_qty,
+    stock: line.quantity + ' / ' + stock[0].batch_qty, // Afficher la quantité demandée / quantité totale disponible
     ref: line.product_details.ref,
     mode : "A prélever",
   });

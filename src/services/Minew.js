@@ -184,8 +184,13 @@ class Minew {
     let payload = {
       id: data.productId,
       storeId: this.storeId,
+      PartNo: data.lot,
+      name: data.name,
       quantity: data.quantity,
+      specification: data.emplacement,
       stock: data.stock,
+      ref: data.ref,
+      qrcode: data.qrcode,
       mode : data.mode || "Disponible"
     }
     try {
