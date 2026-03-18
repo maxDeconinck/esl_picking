@@ -189,7 +189,7 @@ async function prepareESL(pickingId, line, element, stock) {
 
   setTimeout(async () => {
       await Minew.blinkTag(element.mac, { total: 900, color: "cyan" }); // Arrêter le clignotement après 15 minutes
-    }, 1000 * 10);
+  }, 1000 * 10);
     
 
   // Passer l'étiquette en mode picking
