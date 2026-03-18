@@ -175,7 +175,7 @@ async function prepareESL(pickingId, line, element, stock) {
 
   // Generate data for the tag
   setTimeout(async () => {
-    let result = await Minew.refreshGoodsInStore({
+    await Minew.refreshGoodsInStore({
       productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
       lot: stock[0].batch_number || "N/A",
       name: line.product_details.label,
@@ -187,7 +187,7 @@ async function prepareESL(pickingId, line, element, stock) {
     });
   }, 100 * Math.floor(Math.random() * (12 - 3 + 1) + 3)); // Délai aléatoire entre 300 et 1200 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
 
-  console.log('Tag updated for device:', element.mac, { result });
+  console.log('Tag updated for device:', element.mac);
 
   setTimeout(async () => {
       await Minew.blinkTag(element.mac, { total: 900, color: "cyan" }); // Arrêter le clignotement après 15 minutes
