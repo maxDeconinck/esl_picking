@@ -159,7 +159,7 @@ async function prepareESL(pickingId, line, element, stock) {
     console.log(element, line);
   }
 
-  console.log(stock);
+  console.log('Stock received:', stock);
   return;
 
   // Ajouter la ligne de détail au picking
