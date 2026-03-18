@@ -440,7 +440,7 @@ router.post("/:id/update-screen", async (req, res) => {
     }
 
     // On prépare les informations à afficher sur l'étiquette 
-    await MinewService.addGoodsToStore({
+    await MinewService.refreshGoodsInStore({
       productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
       lot: stock[0].batch_number || "N/A",
       name: product.label,
@@ -451,18 +451,10 @@ router.post("/:id/update-screen", async (req, res) => {
       qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
     });
 
-    // On envoie la commande à l'étiquette pour mettre à jour son affichage
-    let result = await MinewService.changeTagDisplay(device.mac, {
-      idData: device.fk_product + '-' + device.emplacement, // Id utilisé dans le template pour afficher les bonnes infos
-      mode: "inventory", // Choix du template selon le mode de l'étiquette
-      device: device
-    });
-
     res.json({
       success: true,
       message: "Device screen updated successfully",
-      device: Device.format(device),
-      result: result
+      device: Device.format(device)
     });
   } catch (error) {
     console.error("Error updating device screen:", error);

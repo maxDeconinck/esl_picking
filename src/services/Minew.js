@@ -178,6 +178,39 @@ class Minew {
     }
   }
 
+  async refreshGoodsInStore(data) {
+    const token = await this.getToken()
+    let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/goods/updateToStore`
+    let payload = {
+      id: data.productId,
+      storeId: this.storeId,
+      quantity: data.quantity,
+      stock: data.stock
+    }
+    try {
+      const res = await axios.post(url, payload, {
+        headers: { Token: token, 'Content-Type': 'application/json' },
+        timeout: 10000
+      })
+      this.logger.info('MinewService: refreshGoodsInStore command sent', { response: res.data })
+      return res.data
+    } catch (err) {
+      this.logger.error('MinewService: error sending refreshGoodsInStore command', err?.response?.data || err.message || err)
+      // On retry une seconde fois
+      try {
+        const res = await axios.post(url, payload, {
+          headers: { Token: token, 'Content-Type': 'application/json' },
+          timeout: 10000
+        })
+        this.logger.info('MinewService: refreshGoodsInStore command retry sent', { response: res.data })
+        return res.data
+      } catch (err) {
+        this.logger.error('MinewService: error on retry sending refreshGoodsInStore command', err?.response?.data || err.message || err)
+      }
+      throw err
+    }
+  }
+
   async changeTagDisplay(tagId, { mode, idData } = {}) {
     if (!tagId) throw new Error('tagId is required')
     const token = await this.getToken()

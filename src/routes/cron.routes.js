@@ -87,6 +87,9 @@ router.post("/button", async (req, res) => {
       return res.status(404).json({ error: "Device not found" });
     }
 
+    // Arrêter le clignotement de l'étiquette
+    await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
+
 
     if(device.mode === 0) { // Si l'étiquette est en mode picking
       // Chercher un picking actif avec ce produit
@@ -114,8 +117,6 @@ router.post("/button", async (req, res) => {
           const updatedDetail = updatedDetails.find(d => d.id === detail.id);
           
           if (updatedDetail && updatedDetail.statut === 'complete') {
-            // Arrêter le clignotement de l'étiquette
-            await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
             // Remettre l'étiquette en mode normal
             await Device.update(device.id, { mode: 1 });
 
@@ -150,7 +151,7 @@ router.post("/button", async (req, res) => {
             });
 
             // On envoie la commande à l'étiquette pour mettre à jour son affichage
-            let result = await MinewService.changeTagDisplay(device.mac, {
+            await MinewService.changeTagDisplay(device.mac, {
               idData: device.fk_product + '-' + device.emplacement, // Id utilisé dans le template pour afficher les bonnes infos
               mode: "inventory", // Choix du template selon le mode de l'étiquette
               device: device
@@ -195,9 +196,6 @@ router.post("/button", async (req, res) => {
       }
     } else {
       console.log(`Device ${device.mac} clicked but is not in picking mode, no action taken`);
-      
-      // Arrêter le clignotement de l'étiquette
-      await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
     }
 
     res.json({
