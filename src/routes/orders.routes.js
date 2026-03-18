@@ -175,7 +175,7 @@ async function prepareESL(pickingId, line, element, stock) {
 
   setTimeout(async () => {
     await Minew.blinkTag(element.mac, { total: 900, color: "cyan" }); // Arrêter le clignotement après 15 minutes    
-  }, 10 * Math.floor(Math.random() * (30 - 5 + 1) + 5)); // Délai aléatoire entre 300 et 900 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
+  }, 100 * Math.floor(Math.random() * (9 - 3 + 1) + 3)); // Délai aléatoire entre 300 et 900 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
 
   // Generate data for the tag
   setTimeout(async () => {
@@ -189,7 +189,7 @@ async function prepareESL(pickingId, line, element, stock) {
       ref: line.product_details.ref,
       mode : "A prélever",
     });
-  }, 100 * Math.floor(Math.random() * (12 - 3 + 1) + 3)); // Délai aléatoire entre 300 et 1200 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
+  }, 100 * Math.floor(Math.random() * (25 - 9 + 1) + 9)); // Délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
 
   console.log('Tag updated for device:', element.mac);
 
