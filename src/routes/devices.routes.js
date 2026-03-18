@@ -354,6 +354,37 @@ router.post("/product/:id/blink", async (req, res) => {
 });
 
 /** 
+ * POST /devices/:id/turn-off-blink
+ * Arrêter le clignotement d'une étiquette
+ */
+router.post("/:id/turn-off-blink", async (req, res) => {
+  try {
+    const deviceId = parseInt(req.params.id, 10);
+    const device = await Device.findById(deviceId);
+
+    if (!device) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    if (!device.mac) {
+      return res.status(400).json({ error: "Device has no MAC address" });
+    }
+
+    const result = await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
+
+    res.json({
+      success: true,
+      message: "Blink stopped successfully",
+      device: Device.format(device),
+      result: result
+    });
+  } catch (error) {
+    console.error("Error stopping blink:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
+/** 
  * POST /devices/:id/mode
  * Changer le mode d'une étiquette (ex: picking, inventory, etc.)
  * Note: cette fonctionnalité permet de changer le comportement de l'étiquette selon le mode choisi.
