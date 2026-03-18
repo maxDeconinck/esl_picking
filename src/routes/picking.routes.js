@@ -114,12 +114,16 @@ router.put("/:id/status", async (req, res) => {
         if (devices) {
           for (const device of devices) {
             if (device.emplacement === detail.emplacement) {
-                // Arrêter le clignotement de l'étiquette
+                // Arrêter le clignotement de l'étiquette au cas où le premier arrêt ne fonctionne pas
                 await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
 
                 // Colonne associée à éteindre aussi
                 const columnName = device.emplacement.split('.')[0];
                 const columnData = await Device.findByEmplacement(columnName);
+
+                if(!columnData || columnData.type !== 'colonne') {
+                  console.warn(`No column found for emplacement ${columnName}, skipping column blink off.`);
+                }
 
                 if(columnData && columnData.type === 'colonne') {
                     await MinewService.blinkTag(columnData.mac, {total: 0, color: 0});
@@ -139,8 +143,8 @@ router.put("/:id/status", async (req, res) => {
                 }
 
                 // On prépare les informations à afficher sur l'étiquette 
-                await MinewService.addGoodsToStore({
-                    productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
+                await MinewService.refreshGoodsInStore({
+                    productId: device.fk_product + '-' + device.emplacement,
                     lot: stock[0].batch_number || "N/A",
                     name: product.label,
                     quantity: 0,
@@ -148,13 +152,6 @@ router.put("/:id/status", async (req, res) => {
                     stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
                     ref: product.ref,
                     qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
-                });
-
-                // On envoie la commande à l'étiquette pour mettre à jour son affichage
-                await MinewService.changeTagDisplay(device.mac, {
-                    idData: device.fk_product + '-' + device.emplacement, // Id utilisé dans le template pour afficher les bonnes infos
-                    mode: "inventory", // Choix du template selon le mode de l'étiquette
-                    device: device
                 });
               
               // Remettre l'étiquette en mode inventaire (mode 1)
