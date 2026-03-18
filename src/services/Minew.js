@@ -100,6 +100,7 @@ class Minew {
       this.logger.error(`MinewService: error sending blinkTag command to tag ${tagId}`, err?.response?.data || err.message || err)
 
       // On retry la commande une seconde fois
+      await delay(500);
       try {
         const res = await axios.get(url, {
           headers: { Token: token },
@@ -164,6 +165,7 @@ class Minew {
     } catch (err) {
       this.logger.error('MinewService: error sending addGoodsToStore command', err?.response?.data || err.message || err)
       // On retry une seconde fois
+      await delay(500);
       try {
         const res = await axios.post(url, payload, {
           headers: { Token: token, 'Content-Type': 'application/json' },
@@ -203,6 +205,7 @@ class Minew {
     } catch (err) {
       this.logger.error('MinewService: error sending refreshGoodsInStore command', err?.response?.data || err.message || err)
       // On retry une seconde fois
+      await delay(500);
       try {
         const res = await axios.post(url, payload, {
           headers: { Token: token, 'Content-Type': 'application/json' },
@@ -251,6 +254,7 @@ class Minew {
     } catch (err) {
       this.logger.error(`MinewService: error sending changeTagDisplay command to tag ${tagId}`, err?.response?.data || err.message || err)
       // On retry une seconde fois
+      await delay(500);
       try {         
         const res = await axios.post(url, payload,{
           headers: { Token: token },
