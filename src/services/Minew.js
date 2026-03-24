@@ -282,11 +282,11 @@ class Minew {
         qrcode: data.qrcode,
         mode : data.mode
       },
-      color : data.color || "cyan",
-      total  : data.total || 90,
-      period : data.period || 200,
-      interval : data.interval || 800,
-      brightness : data.brightness || 100
+      color : data.color,
+      total  : data.total,
+      period : data.period,
+      interval : data.interval,
+      brightness : data.brightness
     }
     try {
       const res = await axios.post(url, payload, {

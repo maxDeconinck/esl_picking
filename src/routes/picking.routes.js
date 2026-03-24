@@ -159,7 +159,10 @@ router.put("/:id/status", async (req, res) => {
                       ref: product.ref,
                       qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
                       mode: 'Disponible',
-                      color: 0
+                      color: 0,
+                      total: 0,
+                      interval: 800,
+                      period : 200,
                   });
                 }, 100 * Math.floor(Math.random() * (25 - 6 + 1) + 9)); // Rafraîchir l'écran après un délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
               
