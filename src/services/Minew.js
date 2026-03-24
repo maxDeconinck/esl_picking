@@ -286,9 +286,9 @@ class Minew {
       },
       color : 7,
       total  : 90,
-      period : '800',
-      interval : '200',
-      brightness : '100'
+      period : 200,
+      interval : 800,
+      brightness : 100
     }
     console.log('Sending pickingLaunch command to Minew API with payload:', payload)
     try {
