@@ -175,7 +175,7 @@ async function prepareESL(pickingId, line, element, stock) {
 
   // Generate data for the tag
   setTimeout(async () => {
-    await Minew.pickingLaunch({
+    await Minew.picking({
       mac: element.mac,
       productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
       lot: stock[0].batch_number || "N/A",
@@ -184,13 +184,16 @@ async function prepareESL(pickingId, line, element, stock) {
       emplacement: element.emplacement,
       stock: line.quantity + ' / ' + stock[0].batch_qty, // Afficher la quantité demandée / quantité totale disponible
       ref: line.product_details.ref,
-      qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${line.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
+      mode: 'A prélever',
+      qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${line.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
+      color: 7,
+      total: 900,
+      interval: 800,
+      period : 200, 
     });
   }, 100 * Math.floor(Math.random() * (25 - 6 + 1) + 9)); // Délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
 
   console.log('Tag updated for device:', element.mac);
-
- 
 
   // Passer l'étiquette en mode picking
   await Device.update(element.id, { mode: 0 });

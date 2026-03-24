@@ -262,7 +262,7 @@ class Minew {
     }
   }
 
-  async pickingLaunch(data) {
+  async picking(data) {
     const token = await this.getToken()
     let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/label/updateBindBrush`
     let payload = {
@@ -280,13 +280,13 @@ class Minew {
         stock: data.stock,
         ref: data.ref,
         qrcode: data.qrcode,
-        mode : "A prélever"
+        mode : data.mode
       },
-      color : 7,
-      total  : 90,
-      period : 200,
-      interval : 800,
-      brightness : 100
+      color : data.color || "cyan",
+      total  : data.total || 90,
+      period : data.period || 200,
+      interval : data.interval || 800,
+      brightness : data.brightness || 100
     }
     console.log('Sending pickingLaunch command to Minew API with payload:', payload)
     try {

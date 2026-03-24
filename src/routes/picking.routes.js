@@ -112,8 +112,6 @@ router.put("/:id/status", async (req, res) => {
         const devices = await Device.findByProductId(detail.fk_product);
         
         if (devices) {
-          // Arrêter le clignotement des étiquettes au cas où le premier arrêt ne fonctionne pas
-          await MinewService.blinkMultipleTag(devices.map(d => d.mac), { total: 0, color: 0 });
 
           for (const device of devices) {
             if (device.emplacement === detail.emplacement) {
@@ -150,7 +148,8 @@ router.put("/:id/status", async (req, res) => {
                 
                 // On prépare les informations à afficher sur l'étiquette 
                 setTimeout(async () => {
-                  await MinewService.refreshGoodsInStore({
+                  await MinewService.picking({
+                      mac: device.mac,
                       productId: device.fk_product + '-' + device.emplacement,
                       lot: stock[0].batch_number || "N/A",
                       name: product.label,
@@ -158,7 +157,9 @@ router.put("/:id/status", async (req, res) => {
                       emplacement: device.emplacement,
                       stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
                       ref: product.ref,
-                      qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
+                      qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
+                      mode: 'Disponible',
+                      color: 0
                   });
                 }, 100 * Math.floor(Math.random() * (25 - 6 + 1) + 9)); // Rafraîchir l'écran après un délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
               
