@@ -115,6 +115,48 @@ class Minew {
     }
   }
 
+  async blinkMultipleTag(tagIds, options = {}) {
+    if (!tagIds || !Array.isArray(tagIds) || tagIds.length === 0) throw new Error('tagIds array is required')
+    if(typeof color === 'string') { color = this.colorNameToCode(color)    }
+    const token = await this.getToken()
+    let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/label/batchLed`
+
+    let payload = {
+      storeId: this.storeId,
+      color: options.color || '0',
+      interval: options.interval || '200',
+      period: options.period || '800',
+      brightness: options.brightness || '100',
+      total: options.total || 10,
+      macs: tagIds
+    }
+
+    try {
+      const res = await axios.post(url, payload, {
+        headers: { Token: token, 'Content-Type': 'application/json' },
+        timeout: 10000
+      })
+      this.logger.info(`MinewService: blinkTag command sent to tags ${tagIds.join(', ')}`, { response: res.data })
+      return res.data
+    } catch (err) {
+      this.logger.error(`MinewService: error sending blinkTag command to tags ${tagIds.join(', ')}`, err?.response?.data || err.message || err)
+
+      // On retry la commande une seconde fois
+      await delay(500);
+      try {
+        const res = await axios.post(url, payload, {
+          headers: { Token: token, 'Content-Type': 'application/json' },
+          timeout: 10000
+        })
+        this.logger.info(`MinewService: blinkTag command retry sent to tags ${tagIds.join(', ')}`, { response: res.data })
+        return res.data
+      } catch (err) {
+        this.logger.error(`MinewService: error on retry sending blinkTag command to tags ${tagIds.join(', ')}`, err?.response?.data || err.message || err)
+      }
+      throw err
+    }
+  }
+
   async blinkTagByPosition(position, options = {}) {
     if (!position) throw new Error('position is required')
 
@@ -215,6 +257,58 @@ class Minew {
         return res.data
       } catch (err) {
         this.logger.error('MinewService: error on retry sending refreshGoodsInStore command', err?.response?.data || err.message || err)
+      }
+      throw err
+    }
+  }
+
+  async pickingLaunch(data) {
+    const token = await this.getToken()
+    let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/label/updateBindBrush`
+    let payload = {
+      token : token,
+      labelMac: data.mac,
+      storeId: this.storeId,
+      demoIdMap : [
+          {
+            demoId: '2026695741933621248',
+            goodsId: data.productId,
+            side: "A"
+          }
+        ],
+      goodsMap : {
+        id: data.productId,
+        storeId: this.storeId,
+        PartNo: data.lot,
+        name: data.name,
+        quantity: data.quantity,
+        specification: data.emplacement,
+        stock: data.stock,
+        ref: data.ref,
+        qrcode: data.qrcode,
+        mode : data.mode || "Disponible"
+      }
+    }
+    try {
+      const res = await axios.post(url, payload, {
+        headers: { Token: token, 'Content-Type': 'application/json' },
+        timeout: 10000
+      })
+      this.logger.info('MinewService: pickingLaunch command sent', { response: res.data })
+      return res.data
+    } catch (err) {
+      this.logger.error('MinewService: error sending pickingLaunch command', err?.response?.data || err.message || err)
+      // On retry une seconde fois
+      await delay(500);
+      try {
+        const res = await axios.post(url, payload, {
+          headers: { Token: token, 'Content-Type': 'application/json' },
+          timeout: 10000
+        })
+        this.logger.info('MinewService: pickingLaunch command retry sent', { response: res.data })
+        return res.data
+      } catch (err) {
+        this.logger.error('MinewService: error on retry sending pickingLaunch command', err?.response?.data || err.message || err)
       }
       throw err
     }
