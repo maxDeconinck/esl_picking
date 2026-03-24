@@ -289,6 +289,7 @@ class Minew {
         mode : data.mode || "Disponible"
       }
     }
+    console.log('Sending pickingLaunch command to Minew API with payload:', payload)
     try {
       const res = await axios.post(url, payload, {
         headers: { Token: token, 'Content-Type': 'application/json' },
