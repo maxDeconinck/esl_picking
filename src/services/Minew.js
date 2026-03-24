@@ -266,7 +266,6 @@ class Minew {
     const token = await this.getToken()
     let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/label/updateBindBrush`
     let payload = {
-      token : token,
       labelMac: data.mac,
       storeId: this.storeId,
       demoIdMap : {
