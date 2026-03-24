@@ -273,7 +273,6 @@ class Minew {
       },
       goodsMap : {
         id: data.productId,
-        storeId: this.storeId,
         PartNo: data.lot,
         name: data.name,
         quantity: data.quantity,
