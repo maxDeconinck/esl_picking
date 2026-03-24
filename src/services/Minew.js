@@ -269,13 +269,9 @@ class Minew {
       token : token,
       labelMac: data.mac,
       storeId: this.storeId,
-      demoIdMap : [
-          {
-            demoId: '2026695741933621248',
-            goodsId: data.productId,
-            side: "A"
-          }
-        ],
+      demoIdMap : {
+        A: '2026695741933621248'
+      },
       goodsMap : {
         id: data.productId,
         storeId: this.storeId,
@@ -286,8 +282,13 @@ class Minew {
         stock: data.stock,
         ref: data.ref,
         qrcode: data.qrcode,
-        mode : data.mode || "Disponible"
-      }
+        mode : "A prélever"
+      },
+      color : 7,
+      total  : 90,
+      period : '800',
+      interval : '200',
+      brightness : '100'
     }
     console.log('Sending pickingLaunch command to Minew API with payload:', payload)
     try {
