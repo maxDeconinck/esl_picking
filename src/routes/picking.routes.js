@@ -140,12 +140,6 @@ router.put("/:id/status", async (req, res) => {
                 if (!product) {
                     return res.status(404).json({ error: "Associated product not found" });
                 }
-
-                setTimeout(async () => {
-                  await Device.update(device.id, { mode: 1 });
-                  console.log(`✅ Device ${device.mac} screen refreshed and switched back to inventory mode`);
-                }, 100 * Math.floor(Math.random() * (25 - 6 + 1) + 9)); // Rafraîchir l'écran après un délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
-                
                 // On prépare les informations à afficher sur l'étiquette 
                 setTimeout(async () => {
                   await MinewService.picking({
@@ -164,9 +158,10 @@ router.put("/:id/status", async (req, res) => {
                       interval: 800,
                       period : 600,
                   });
+                  await Device.update(device.id, { mode: 1 });
+                  console.log(`✅ Device ${device.mac} screen refreshed and switched back to inventory mode`);
                 }, 100 * Math.floor(Math.random() * (25 - 6 + 1) + 9)); // Rafraîchir l'écran après un délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
               
-                console.log(`✅ Device ${device.mac} switched back to inventory mode`);
             }
           }
         }
