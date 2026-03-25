@@ -154,7 +154,7 @@ router.put("/:id/status", async (req, res) => {
                       qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
                       mode: 'Disponible',
                       color: 0,
-                      total: 0,
+                      total: 1,
                       interval: 800,
                       period : 600,
                   });
