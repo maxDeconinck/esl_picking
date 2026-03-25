@@ -162,7 +162,7 @@ router.put("/:id/status", async (req, res) => {
                       color: 0,
                       total: 0,
                       interval: 800,
-                      period : 200,
+                      period : 600,
                   });
                 }, 100 * Math.floor(Math.random() * (25 - 6 + 1) + 9)); // Rafraîchir l'écran après un délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
               
