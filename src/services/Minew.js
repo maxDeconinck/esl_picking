@@ -293,10 +293,10 @@ class Minew {
         headers: { Token: token, 'Content-Type': 'application/json' },
         timeout: 10000
       })
-      this.logger.info('MinewService: pickingLaunch command sent', { response: res.data })
+      this.logger.info('MinewService: picking command sent', { response: res.data, payload : payload })
       return res.data
     } catch (err) {
-      this.logger.error('MinewService: error sending pickingLaunch command', err?.response?.data || err.message || err)
+      this.logger.error('MinewService: error sending picking command', err?.response?.data || err.message || err)
       // On retry une seconde fois
       await delay(500);
       try {
@@ -304,10 +304,10 @@ class Minew {
           headers: { Token: token, 'Content-Type': 'application/json' },
           timeout: 10000
         })
-        this.logger.info('MinewService: pickingLaunch command retry sent', { response: res.data })
+        this.logger.info('MinewService: picking command retry sent', { response: res.data })
         return res.data
       } catch (err) {
-        this.logger.error('MinewService: error on retry sending pickingLaunch command', err?.response?.data || err.message || err)
+        this.logger.error('MinewService: error on retry sending picking command', err?.response?.data || err.message || err)
       }
       throw err
     }
