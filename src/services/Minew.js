@@ -286,7 +286,7 @@ class Minew {
       total  : data.total,
       period : data.period,
       interval : data.interval,
-      brightness : data.brightness
+      brightness : 100
     }
     try {
       const res = await axios.post(url, payload, {
