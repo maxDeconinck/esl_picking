@@ -648,7 +648,6 @@
             $('#editDeviceMode').val(device.mode !== undefined ? device.mode : '0');
             $('#editDeviceForm').data('deviceId', deviceId);
             $('#editSerialType').val(device.serial !== undefined ? device.serial : 'lot');
-            console.log('Device to edit:', device);
 
             const modal = new bootstrap.Modal(document.getElementById('editDeviceModal'));
             modal.show();
