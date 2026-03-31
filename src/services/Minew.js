@@ -184,6 +184,7 @@ class Minew {
       specification: data.emplacement,
       stock: data.stock,
       ref: data.ref,
+      mode : data.mode || "Disponible",
       qrcode: data.qrcode
     }
     try {
