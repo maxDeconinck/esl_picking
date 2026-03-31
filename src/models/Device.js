@@ -136,7 +136,7 @@ class Device {
         fields.push("de_mode = ?");
         values.push(mode);
       }
-      if (emplacement !== undefined) {
+      if (emplacement !== undefined && emplacement !== null) {
         fields.push("de_pos = ?");
         values.push(emplacement.toUpperCase());
       }
