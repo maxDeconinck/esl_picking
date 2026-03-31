@@ -136,9 +136,12 @@ class Device {
         fields.push("de_mode = ?");
         values.push(mode);
       }
-      if (emplacement !== undefined && emplacement !== null) {
+      if (emplacement !== undefined) {
         fields.push("de_pos = ?");
-        values.push(emplacement.toUpperCase());
+        if(emplacement !== null)
+          values.push(emplacement.toUpperCase());
+        else         
+          values.push(null);
       }
       if (fk_product !== undefined) {
         fields.push("de_fk_product = ?");
