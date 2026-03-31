@@ -176,7 +176,7 @@ async function prepareESL(pickingId, line, element, stock) {
   // Generate data for the tag
   setTimeout(async () => {
     let stockDisplay = line.quantity;
-    if(stock.length > 0 && stock[0].batch_qty !== undefined) {
+    if(stock.length > 0 && stock[0].batch_qty !== undefined && stock[0].batch_qty !== null) {
       stockDisplay += ' / ' + stock[0].batch_qty;
     }
     await Minew.picking({
