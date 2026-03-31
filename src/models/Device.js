@@ -9,7 +9,7 @@ class Device {
   static async findAll() {
     try {
       const [rows] = await pool.execute(
-        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type' FROM DEVICES ORDER BY de_id ASC"
+        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type', de_serial AS 'serial' FROM DEVICES ORDER BY de_id ASC"
       );
       return rows;
     } catch (error) {
@@ -24,7 +24,7 @@ class Device {
   static async findAffected() {
     try {
       const [rows] = await pool.execute(
-        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type' FROM DEVICES WHERE de_fk_product IS NOT NULL ORDER BY de_id ASC"
+        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type', de_serial AS 'serial' FROM DEVICES WHERE de_fk_product IS NOT NULL ORDER BY de_id ASC"
       );
       return rows;
     } catch (error) {
@@ -41,7 +41,7 @@ class Device {
   static async findById(id) {
     try {
       const [rows] = await pool.execute(
-        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type' FROM DEVICES WHERE de_id = ?",
+        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type', de_serial AS 'serial' FROM DEVICES WHERE de_id = ?",
         [id]
       );
       return rows.length > 0 ? rows[0] : null;
@@ -59,7 +59,7 @@ class Device {
   static async findByEmplacement(emplacement) {
     try {
       const [rows] = await pool.execute(
-        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type' FROM DEVICES WHERE de_pos = ?",
+        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type', de_serial AS 'serial' FROM DEVICES WHERE de_pos = ?",
         [emplacement]
       );
       return rows.length > 0 ? rows[0] : null;
@@ -77,7 +77,7 @@ class Device {
   static async findByMac(mac) {
     try {
       const [rows] = await pool.execute(
-        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode' FROM DEVICES WHERE de_mac = ?",
+        "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type', de_serial AS 'serial' FROM DEVICES WHERE de_mac = ?",
         [mac]
       );
       return rows.length > 0 ? rows[0] : null;
@@ -95,7 +95,7 @@ class Device {
     static async findByProductId(productId) {
       try {
         const [rows] = await pool.execute(
-          "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode' FROM DEVICES WHERE de_fk_product = ?",
+          "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type', de_serial AS 'serial' FROM DEVICES WHERE de_fk_product = ?",
           [productId]
         );
         return rows.length > 0 ? rows : null; // On retourne un tableau d'étiquettes, car il peut y en avoir plusieurs pour un même produit
@@ -173,13 +173,15 @@ class Device {
    * @param {string} deviceData.key - Clé de l'étiquette
    * @param {string} deviceData.emplacement - Emplacement de l'étiquette
    * @param {number} deviceData.fk_product - ID du produit Dolibarr
+   * @param {string} [deviceData.type] - Type de l'étiquette
+   * @param {string} [deviceData.serial] - Numéro de série/lot de l'étiquette
    * @returns {Promise<number>} ID de la nouvelle étiquette
    */
-  static async create({ name, mac, key, emplacement, fk_product }) {
+  static async create({ name, mac, key, emplacement, fk_product, type, serial }) {
     try {
       const [result] = await pool.execute(
-        "INSERT INTO DEVICES (de_name, de_mac, de_key, de_pos, de_fk_product) VALUES (?, ?, ?, ?, ?)",
-        [name, mac, key, emplacement, fk_product || null]
+        "INSERT INTO DEVICES (de_name, de_mac, de_key, de_pos, de_fk_product, de_type, de_serial) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [name, mac, key, emplacement, fk_product || null, type || null, serial || null]
       );
       return result.insertId;
     } catch (error) {
@@ -217,7 +219,9 @@ class Device {
       mode: device.mode,
       emplacement: device.emplacement,
       fk_product: device.fk_product,
-      product: device.product || null
+      product: device.product || null,
+      type: device.type || null,
+      serial: device.serial || null
     };
   }
 }
