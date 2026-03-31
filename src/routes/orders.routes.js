@@ -175,6 +175,10 @@ async function prepareESL(pickingId, line, element, stock) {
 
   // Generate data for the tag
   setTimeout(async () => {
+    let stock = line.quantity;
+    if(stock[0].batch_qty !== undefined) {
+      stock += ' / ' + stock[0].batch_qty;
+    }
     await Minew.picking({
       mac: element.mac,
       productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
@@ -182,7 +186,7 @@ async function prepareESL(pickingId, line, element, stock) {
       name: line.product_details.label,
       quantity: line.quantity,
       emplacement: element.emplacement,
-      stock: line.quantity + ' / ' + stock[0].batch_qty, // Afficher la quantité demandée / quantité totale disponible
+      stock: stock, // Afficher la quantité demandée / quantité totale disponible
       ref: line.product_details.ref,
       mode: 'A prélever',
       qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${line.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,

@@ -270,6 +270,7 @@
                                 <th>Produit</th>
                                 <th>Mode</th>
                                 <th>Type</th>
+                                <th>Serial/Lot</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -328,7 +329,6 @@
                         <div class="mb-3">
                             <label class="form-label">Type</label>
                             <select class="form-select" id="editSerialType">
-                                <option value="">-</option>
                                 <option value="batch">Numéro de lot</option>
                                 <option value="serial">Numéro de série</option>
                             </select>
@@ -440,7 +440,7 @@
                     : '<span class="text-muted">-</span>',
                 device.mode === 1 ? '<span class="badge bg-info">Inventaire</span>' : '<span class="badge bg-success">Picking</span>',
                 device.type ? `<span class="badge bg-secondary">${device.type}</span>` : '<span class="text-muted">-</span>',
-                device.serial || device.serial || '<span class="text-muted">-</span>',
+                device.serial == 'serial' ? '<span class="badge bg-info">Série</span>' : '<span class="badge bg-dark text-white">Lot</span>',
                 `<div class="text-center" style="white-space: nowrap;">
                     <button class="action-btn blink" onclick="updateScreenDevice(${device.id})" title="Mettre à jour l'affichage">
                         <i class="fas fa-sync-alt"></i>
@@ -647,6 +647,8 @@
             $('#editDeviceMac').val(device.mac || '');
             $('#editDeviceMode').val(device.mode !== undefined ? device.mode : '0');
             $('#editDeviceForm').data('deviceId', deviceId);
+            $('#editSerialType').val(device.serial !== undefined ? device.serial : 'lot');
+            console.log('Device to edit:', device);
 
             const modal = new bootstrap.Modal(document.getElementById('editDeviceModal'));
             modal.show();
@@ -667,7 +669,8 @@
                     name: $('#editDeviceName').val() || null,
                     emplacement: $('#editDeviceEmplacement').val() || null,
                     fk_product: $('#editDeviceProduct').val() ? parseInt($('#editDeviceProduct').val()) : null,
-                    mode: $('#editDeviceMode').val() ? parseInt($('#editDeviceMode').val()) : null
+                    mode: $('#editDeviceMode').val() ? parseInt($('#editDeviceMode').val()) : null,
+                    serial: $('#editSerialType').val() || null
                 };
 
                 const response = await fetch(`${API_BASE_URL}/devices/${deviceId}`, {

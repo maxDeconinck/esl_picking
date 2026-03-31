@@ -112,7 +112,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const deviceId = parseInt(req.params.id, 10);
-    const { name, mac, key, emplacement, fk_product, mode } = req.body;
+    const { name, mac, key, emplacement, fk_product, mode, serial } = req.body;
 
     if (!deviceId) {
       return res.status(400).json({ error: "Device ID is required" });
@@ -124,7 +124,8 @@ router.put("/:id", async (req, res) => {
       key,
       emplacement,
       fk_product,
-      mode
+      mode,
+      serial
     });
 
     if (!updated) {

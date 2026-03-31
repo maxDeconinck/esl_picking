@@ -115,7 +115,7 @@ class Device {
    * @param {number} [deviceData.fk_product] - ID du produit Dolibarr
    * @returns {Promise<boolean>} true si la mise à jour a réussi, sinon false
    */
-  static async update(id, { name, mac, key, emplacement, fk_product, mode }) {
+  static async update(id, { name, mac, key, emplacement, fk_product, mode, serial }) {
     try {
       const fields = [];
       const values = [];
@@ -146,6 +146,10 @@ class Device {
       if (fk_product !== undefined) {
         fields.push("de_fk_product = ?");
         values.push(fk_product);
+      }
+      if (serial !== undefined) {
+        fields.push("de_serial = ?");
+        values.push(serial);
       }
 
       if (fields.length === 0) {
