@@ -437,6 +437,70 @@ router.post("/:id/mode", async (req, res) => {
 });
 
 /**
+ * POST /devices/:id/update-screen-manual
+ * Mettre à jour l'affichage d'une étiquette avec les informations du produit associé
+ * Note: cette fonctionnalité permet de forcer la mise à jour de l'affichage d'une étiquette, par exemple après avoir modifié les informations du produit dans Dolibarr ou après avoir changé le mode de l'étiquette. Elle récupère les dernières informations du produit associé à l'étiquette et envoie une commande à l'étiquette pour mettre à jour son affichage.
+ */
+router.post("/:id/update-screen-manual", async (req, res) => {
+  try {
+    const deviceId = parseInt(req.params.id, 10);
+    const device = await Device.findById(deviceId);
+
+    if (!device) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    if (!device.mac) {
+      return res.status(400).json({ error: "Device has no MAC address" });
+    }
+
+    if (!device.fk_product) {
+      return res.status(400).json({ error: "Device is not associated with any product" });
+    }
+
+    // On récupère les dernières informations du produit associé à l'étiquette depuis Dolibarr
+    const product = await DolibarrAPI.getProduct(device.fk_product);
+    const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
+
+    if (!stock || stock.length === 0) {
+      return res.status(404).json({ error: "Stock information not found for the associated product and location" });
+    }
+
+    if (!product) {
+      return res.status(404).json({ error: "Associated product not found" });
+    }
+
+    // On prépare les informations à afficher sur l'étiquette 
+    await MinewService.addGoodsToStore({
+      productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
+      lot: stock[0].batch_number || "N/A",
+      name: product.label,
+      quantity: 0,
+      emplacement: device.emplacement,
+      stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
+      ref: product.ref,
+      qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
+    });
+
+    setTimeout(async () => {
+      await MinewService.changeTagDisplay(device.mac, {
+        mode: "inventory",
+        idData: device.fk_product + '-' + device.emplacement // On utilise le même identifiant que pour addGoodsToStore pour que Minew puisse faire le lien entre les données et l'étiquette
+      });
+    }, 5000); // On attend 5 secondes pour être sûr que les données ont été ajoutées dans Minew avant d'envoyer la commande d'affichage
+
+    res.json({
+      success: true,
+      message: "Device screen updated successfully",
+      device: Device.format(device)
+    });
+  } catch (error) {
+    console.error("Error updating device screen:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
+/**
  * POST /devices/:id/update-screen
  * Mettre à jour l'affichage d'une étiquette avec les informations du produit associé
  * Note: cette fonctionnalité permet de forcer la mise à jour de l'affichage d'une étiquette, par exemple après avoir modifié les informations du produit dans Dolibarr ou après avoir changé le mode de l'étiquette. Elle récupère les dernières informations du produit associé à l'étiquette et envoie une commande à l'étiquette pour mettre à jour son affichage.

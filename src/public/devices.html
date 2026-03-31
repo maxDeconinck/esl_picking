@@ -593,7 +593,7 @@
                     showError('Token API requis');
                     return;
                 }
-                const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/update-screen`, {
+                const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/update-screen-manual`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
