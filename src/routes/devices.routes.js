@@ -472,13 +472,18 @@ router.post("/:id/update-screen-manual", async (req, res) => {
     }
 
     // On prépare les informations à afficher sur l'étiquette 
+    let stockToDisplay = stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total;
+    if(stockToDisplay && stockToDisplay % 1 !== 0) {
+      stockToDisplay = stockToDisplay.toFixed(2); // Afficher 2 décimales si la quantité n'est pas un entier
+    }
+
     await MinewService.addGoodsToStore({
       productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
       lot: stock[0].batch_number || "N/A",
       name: product.label,
       quantity: 0,
       emplacement: device.emplacement,
-      stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
+      stock: stockToDisplay,
       ref: product.ref,
       mode: 'Disponible',
       qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
@@ -537,13 +542,17 @@ router.post("/:id/update-screen", async (req, res) => {
     }
 
     // On prépare les informations à afficher sur l'étiquette 
+    let stockToDisplay = stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total;
+    if(stockToDisplay && stockToDisplay % 1 !== 0) {
+      stockToDisplay = stockToDisplay.toFixed(2); // Afficher 2 décimales si la quantité n'est pas un entier
+    }
     await MinewService.refreshGoodsInStore({
       productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
       lot: stock[0].batch_number || "N/A",
       name: product.label,
       quantity: 0,
       emplacement: device.emplacement,
-      stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
+      stock: stockToDisplay,
       ref: product.ref,
       qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
     });
