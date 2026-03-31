@@ -40,6 +40,19 @@ class Minew {
     }
   }
 
+  async resetToken() {
+    this.token = null
+    this.expiresAt = 0
+    try {
+      await fs.unlink(TOKEN_FILE)
+      this.logger.info('MinewService: token file deleted')
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        this.logger.error('MinewService: cannot delete token file', err)
+      }
+    }
+  }
+
   async authenticate() {
     if (!this.clientId || !this.clientSecret) {
       throw new Error('MINEW_CLIENT_ID and MINEW_CLIENT_SECRET must be set')

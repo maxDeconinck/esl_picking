@@ -161,6 +161,9 @@
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-key"></i> Configuration API Token
+                <button class="btn btn-danger btn-sm" onclick="resetToken()">
+                    <i class="fas fa-redo"></i> Reset Token Minew
+                </button>
             </div>
             <div class="card-body">
                 <div class="row align-items-end">
@@ -887,6 +890,42 @@
                 icon.removeClass('fa-eye-slash').addClass('fa-eye');
                 text.text('Afficher');
             }
+        }
+
+        // Fonction pour réinitialiser le token Minew si les appels aux étiquettes ne fonctionne pas
+        function resetToken(){
+            $.ajax({
+                url: `${API_BASE_URL}/token/reset`,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('apiToken')}`
+                },
+                success: function(data) {
+                    if(data.success){
+                        // Afficher un message de succès
+                        const alertHtml = `
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fas fa-check-circle"></i> <strong>Succès:</strong> Token API sauvegardé avec succès!
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        `;
+                        $('.container').prepend(alertHtml);
+                        
+                        // Auto-dismiss après 3 secondes
+                        setTimeout(() => {
+                            $('.alert-success').fadeOut(500, function() {
+                                $(this).remove();
+                            });
+                        }, 3000);
+                    }  else {
+                        alert('Erreur lors de la réinitialisation du token');
+                    }
+                },
+                error: function() {
+                    alert('Erreur lors de la réinitialisation du token');
+                }
+            });
         }
 
         // Charger les devices au chargement de la page
