@@ -7,19 +7,22 @@ class Picking {
    * @returns {Promise<number>} ID du picking créé
    */
   static async create(data) {
-    const { fk_commande, ref_commande, fk_user, user_name, statut = 'en_attente' } = data;
+    const { fk_commande, ref_commande, fk_user, user_name, statut = 'en_attente', type = 'order' } = data;
+
+    const safe = v => v === undefined ? null : v;
     
     const query = `
-      INSERT INTO picking (fk_commande, ref_commande, fk_user, user_name, date_debut, statut)
-      VALUES (?, ?, ?, ?, NOW(), ?)
+      INSERT INTO picking (fk_commande, ref_commande, fk_user, user_name, date_debut, statut, type)
+      VALUES (?, ?, ?, ?, NOW(), ?, ?)
     `;
     
     const [result] = await pool.execute(query, [
-      fk_commande,
-      ref_commande,
-      fk_user,
-      user_name,
-      statut
+      safe(fk_commande),
+      safe(ref_commande),
+      safe(fk_user),
+      safe(user_name),
+      safe(statut),
+      safe(type)
     ]);
     
     return result.insertId;
@@ -48,20 +51,21 @@ class Picking {
   /** 
    * Récupérer un picking par l'id de la commande Dolibarr
    * @param {number} commandeId - ID de la commande Dolibarr
+   * @param {string} type - Type de picking ('order' ou 'bom')
    * @returns {Promise<Object|null>}
    */
-  static async findByCommandeId(commandeId) {
+  static async findByCommandeId(commandeId, type = 'order') {
     const query = `
       SELECT p.*, 
              COUNT(pd.id) as total_products,
              SUM(CASE WHEN pd.statut = 'complete' THEN 1 ELSE 0 END) as products_complete
       FROM picking p
       LEFT JOIN picking_detail pd ON p.id = pd.fk_picking
-      WHERE p.fk_commande = ? AND (p.statut = 'en_cours' OR p.statut = 'en_attente')
+      WHERE p.fk_commande = ? AND (p.statut = 'en_cours' OR p.statut = 'en_attente') AND type = ?
       GROUP BY p.id
     `;
     
-    const [rows] = await pool.execute(query, [commandeId]);
+    const [rows] = await pool.execute(query, [commandeId, type]);
     return rows.length > 0 ? rows[0] : null;
   }
 
@@ -71,8 +75,7 @@ class Picking {
    * @returns {Promise<Array>}
    */
   static async findAll(filters = {}) {
-    let query = `
-      SELECT p.*, 
+    let query = ` SELECT p.*, 
              COUNT(pd.id) as total_products,
              SUM(CASE WHEN pd.statut = 'complete' THEN 1 ELSE 0 END) as products_complete,
              SUM(pd.qty_prelevee) as total_qty_prelevee,

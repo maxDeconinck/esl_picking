@@ -1,5 +1,5 @@
 import express from "express";
-import Order from "../models/Order.js";
+import Bom from "../models/Bom.js";
 import logger from "../services/Logger.js";
 import Minew from "../services/Minew.js";
 import Device from "../models/Device.js";
@@ -9,86 +9,37 @@ import Global from "../services/Global.js";
 const router = express.Router();
 
 /**
- * GET /orders/:id/details
- * Récupérer une commande avec tous ses détails (produits + emplacements)
- */
-router.get("/:id/details", async (req, res) => {
-  try {
-    const orderId = parseInt(req.params.id, 10);
-
-    if (isNaN(orderId)) {
-      return res.status(400).json({ error: "Invalid order ID" });
-    }
-
-    const orderDetails = await Order.findByIdWithDetails(orderId);
-
-    if (!orderDetails) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    res.json(orderDetails);
-  } catch (error) {
-    logger.error(`Failed to fetch order details ${req.params.id}`, {
-      error: error.message,
-    });
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-/**
- * GET /orders/:id/lines
- * Récupérer les lignes (produits) d'une commande
- */
-router.get("/:id/lines", async (req, res) => {
-  try {
-    const orderId = parseInt(req.params.id, 10);
-
-    if (isNaN(orderId)) {
-      return res.status(400).json({ error: "Invalid order ID" });
-    }
-
-    const lines = await Order.getOrderLines(orderId);
-
-    res.json(lines);
-  } catch (error) {
-    logger.error(`Failed to fetch order lines ${req.params.id}`, {
-      error: error.message,
-    });
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-/**
- * POST /orders/:id/picking
- * Lancer le picking pour une commande spécifique via l'id de la commande Dolibarr
+ * POST /bom/:id/picking
+ * Lancer le picking pour une BOM spécifique via l'id de la commande Dolibarr
  */
 router.post("/:id/picking", async (req, res) => {
   try {
-    const orderId = parseInt(req.params.id, 10);
+    const bomId = parseInt(req.params.id, 10);
 
-    const order = await Order.findByIdWithDetails(orderId);
+    const bom = await Bom.findByIdWithDetails(bomId);
 
-    if (!order) {
-      return res.status(404).json({ error: "Order not found" });
+    if (!bom) {
+      return res.status(404).json({ error: "BOM not found" });
     }
 
-    // On vérifie que le picking n'est pas déjà lancé pour cette commande
-    const existingPicking = await Picking.findByCommandeId(order.id, 'order');
+    // On vérifie que le picking n'est pas déjà lancé pour cette BOM
+    const existingPicking = await Picking.findByCommandeId(bom.id, 'bom');
     if (existingPicking) {
-      return res.status(400).json({ error: "Picking already exists for this order" });
+      return res.status(400).json({ error: "Picking already exists for this BOM" });
     }
 
     // Créer le picking dans la base de données
     const pickingId = await Picking.create({
-      fk_commande: order.id,
-      ref_commande: order.ref,
+      fk_commande: bom.id,
+      ref_commande: bom.ref,
       fk_user: null,
       user_name: null,
       statut: 'en_cours',
-      type: 'order'
+      type: 'bom'
     });
 
-    for (const line of order.lines) {
+
+    for (const line of bom.lines) {
       // Check si une etiquette est associé à ce produit
       const device = await Device.findByProductId(line.fk_product);
 
@@ -120,7 +71,7 @@ router.post("/:id/picking", async (req, res) => {
 
     res.json({
       success: true,
-      message: "Picking process started for order ID " + orderId,
+      message: "Picking process started for BOM ID " + bomId,
       pickingId: pickingId
     });
   } catch (error) {

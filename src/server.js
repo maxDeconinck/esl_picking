@@ -13,6 +13,7 @@ import ordersRoutes from "./routes/orders.routes.js";
 import pickingRoutes from "./routes/picking.routes.js";
 import cronRoutes from "./routes/cron.routes.js";
 import tokenRoutes from "./routes/token.routes.js";
+import bomRoutes from "./routes/bom.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,6 +38,7 @@ app.use("/orders", authenticateApiToken, ordersRoutes);
 app.use("/pickings", authenticateApiToken, pickingRoutes);
 app.use("/cron", authenticateCron, cronRoutes);
 app.use("/token", authenticateApiToken, tokenRoutes);
+app.use("/bom", authenticateApiToken, bomRoutes);
 
 app.get("/", (req, res) => {
   res.json({ status: "ok", message: "ESL PICKING API" });
