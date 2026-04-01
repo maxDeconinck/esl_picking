@@ -92,7 +92,6 @@ class Bom {
         }))
       };
 
-      console.log('BOM data with details:', bomData); // Debug log pour vérifier les données finales
       return bomData;
     } catch (error) {
       logger.error(`Error finding BOM with details by ID: ${id}`, {
