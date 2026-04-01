@@ -54,7 +54,7 @@ router.post("/:id/picking", async (req, res) => {
           let stock = line.stock_locations.filter(s => s.warehouse_ref === element.emplacement);
           let descriptionComplementaire = null;
           if(stock.length > 0){
-            if(element.emplacement && element.emplacement.includes('FU.') && complementInformation !== '') {
+            if(element.emplacement && element.emplacement.includes('FU.')) {
               descriptionComplementaire = bom.bom_description;
             }
             await Global.prepareESL(pickingId, line, element, stock, descriptionComplementaire);
