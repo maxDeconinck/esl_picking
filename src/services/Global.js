@@ -56,11 +56,7 @@ class Global {
 
     if(element.emplacement && element.emplacement.includes('FU.') && complementInformation !== '') {
       // Il faut afficher le nombre de maillon et de brin dans la quantité à prélevé pour les produits de type câble (FU.)
-      if(lotNumber === "N/A") {
-        lotNumber = complementInformation; // Si il n'y a pas de numéro de lot, on affiche les infos complémentaires à la place
-      } else {
-        lotNumber += ` (${complementInformation})`; // Sinon on ajoute les infos complémentaires entre parenthèses après le numéro de lot
-      }
+      stockDisplay += ` (${complementInformation})`;
     }
 
     // Ajouter la ligne de détail au picking
