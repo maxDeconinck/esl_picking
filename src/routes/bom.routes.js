@@ -23,14 +23,14 @@ router.post("/:id/picking", async (req, res) => {
     }
 
     // On vérifie que le picking n'est pas déjà lancé pour cette BOM
-    const existingPicking = await Picking.findByCommandeId(bom.id, 'bom');
+    const existingPicking = await Picking.findByCommandeId(bomId, 'bom');
     if (existingPicking) {
       return res.status(400).json({ error: "Picking already exists for this BOM" });
     }
 
     // Créer le picking dans la base de données
     const pickingId = await Picking.create({
-      fk_commande: bom.id,
+      fk_commande: bomId,
       ref_commande: bom.ref,
       fk_user: null,
       user_name: null,

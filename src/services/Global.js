@@ -87,7 +87,7 @@ class Global {
         color: 7,
         total: 900,
         interval: 800,
-        period : 600, 
+        period : 600,
       });
     }, 100 * Math.floor(Math.random() * (25 - 6 + 1) + 9)); // Délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
 
