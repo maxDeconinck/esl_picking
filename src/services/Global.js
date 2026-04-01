@@ -61,7 +61,7 @@ class Global {
       let longueursBrin = complementInformation.match(/longueur\s*de\s*([\d.,]+)\s*m/i);
       let NbBrins = Math.floor(line.quantity / longueursBrin[1].replace(',', '.')); // Calcul du nombre de brins à prélever en fonction de la quantité demandée et de la longueur d'un brin
       if(maillons) {
-        stockDisplay = `${maillons[1]}*${NbBrins} (${line.quantity}m)`; // Affichage du nombre de maillons et de brins à prélever
+        stockDisplay = `${maillons[1]}*${NbBrins} ${line.quantity}m`; // Affichage du nombre de maillons et de brins à prélever
       }
     }
 
