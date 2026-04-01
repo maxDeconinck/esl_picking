@@ -54,11 +54,13 @@ class Global {
       stockDisplay += ' / ' + stock[0].batch_qty;
     }
 
-    if(element.emplacement && element.emplacement.includes('FU.') && complementInformation !== '') {
+    if(element.emplacement && element.emplacement.includes('FU.') && complementInformation) {
       // Il faut afficher le nombre de maillon et de brin dans la quantité à prélevé pour les produits de type câble (FU.)
       console.log('Description complémentaire pour le produit', line.fk_product, ':', complementInformation);
-      let maillons = complementInformation.match(/(\d+)\s*maillons/i);
-      stockDisplay += ` (${maillons})`;
+      const maillons = complementInformation.match(/(\d+)\s*maillons/i);
+      if(maillons) {
+        stockDisplay += ` (${maillons[1]} maillons)`;
+      }
     }
 
     // Ajouter la ligne de détail au picking
