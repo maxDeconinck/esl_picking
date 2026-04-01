@@ -103,7 +103,6 @@ router.post("/button", async (req, res) => {
           await Picking.incrementDetail(detail.id, detail.qty_demandee);
           console.log(`✅ Incremented picking ${picking.id}, detail ${detail.id} for product ${device.fk_product}`);
           
-          
           // Récupérer les détails mis à jour
           const updatedDetails = await Picking.getDetails(picking.id);
           const updatedDetail = updatedDetails.find(d => d.id === detail.id);

@@ -17,6 +17,7 @@ class Bom {
           llx_mrp_mo.rowid as order_id,
           llx_mrp_mo.fk_bom as bom_id,
           llx_mrp_mo.ref as bom_ref,
+          llx_mrp_mo.note_private as bom_description,
           llx_mrp_mo.date_creation as bom_date,
           llx_mrp_mo.status as bom_status,
           llx_bom_bomline.rowid as line_id,
@@ -71,6 +72,7 @@ class Bom {
         ref: bomRows[0].bom_ref,
         date: bomRows[0].bom_date,
         status: bomRows[0].bom_status,
+        description: bomRows[0].bom_description,
         lines: bomRows.map(row => ({
           id: row.line_id,
           fk_product: row.product_id,

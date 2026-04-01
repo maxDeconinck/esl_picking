@@ -47,10 +47,20 @@ class Global {
    * @param {*} stock 
    * @returns {Promise<void>} Préparer les données pour l'étiquette ESL et mettre à jour le picking en base de données
    */
-  static async prepareESL(pickingId, line, element, stock) {
-    if(element.emplacement && element.emplacement.includes('FU.')){
+  static async prepareESL(pickingId, line, element, stock, complementInformation = '') {
+    let lotNumber = stock[0].batch_number || "N/A";
+    let stockDisplay = line.quantity;
+    if(stock.length > 0 && stock[0].batch_qty !== undefined && stock[0].batch_qty !== null) {
+      stockDisplay += ' / ' + stock[0].batch_qty;
+    }
+
+    if(element.emplacement && element.emplacement.includes('FU.') && complementInformation !== '') {
       // Il faut afficher le nombre de maillon et de brin dans la quantité à prélevé pour les produits de type câble (FU.)
-      console.log(element, line);
+      if(lotNumber === "N/A") {
+        lotNumber = complementInformation; // Si il n'y a pas de numéro de lot, on affiche les infos complémentaires à la place
+      } else {
+        lotNumber += ` (${complementInformation})`; // Sinon on ajoute les infos complémentaires entre parenthèses après le numéro de lot
+      }
     }
 
     // Ajouter la ligne de détail au picking
@@ -61,7 +71,7 @@ class Global {
       product_name: line.product_details.label,
       emplacement: element.emplacement,
       fk_batch: null,
-      batch_number: stock[0].batch_number || null,
+      batch_number: lotNumber,
       fk_warehouse: stock[0].warehouse_id,
       qty_demandee: line.quantity,
       ordre: null
@@ -69,14 +79,10 @@ class Global {
 
     // Generate data for the tag
     setTimeout(async () => {
-      let stockDisplay = line.quantity;
-      if(stock.length > 0 && stock[0].batch_qty !== undefined && stock[0].batch_qty !== null) {
-        stockDisplay += ' / ' + stock[0].batch_qty;
-      }
       await Minew.picking({
         mac: element.mac,
         productId: line.fk_product + '-' + element.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
-        lot: stock[0].batch_number || "N/A",
+        lot: lotNumber,
         name: line.product_details.label,
         quantity: line.quantity,
         emplacement: element.emplacement,

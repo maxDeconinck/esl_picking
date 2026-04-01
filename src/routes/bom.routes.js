@@ -52,8 +52,12 @@ router.post("/:id/picking", async (req, res) => {
         for (const element of deviceToBlink) {
 
           let stock = line.stock_locations.filter(s => s.warehouse_ref === element.emplacement);
+          let descriptionComplementaire = null;
           if(stock.length > 0){
-            await Global.prepareESL(pickingId, line, element, stock);
+            if(element.emplacement && element.emplacement.includes('FU.') && complementInformation !== '') {
+              descriptionComplementaire = bom.bom_description;
+            }
+            await Global.prepareESL(pickingId, line, element, stock, descriptionComplementaire);
 
             // Get Column to blink
             const columnName = element.emplacement.split('.')[0];

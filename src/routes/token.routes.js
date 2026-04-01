@@ -1,5 +1,4 @@
 import express from "express";
-import Device from "../models/Device.js";
 import MinewService from "../services/Minew.js";
 
 const router = express.Router();
