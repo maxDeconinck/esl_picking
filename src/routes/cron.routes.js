@@ -170,10 +170,24 @@ router.get('/check-stuck-pickings', async (req, res) => {
               continue;
           }
 
+          let numLot = stock[0].batch_number || "N/A";
+          if(device.serial === 'serial'){
+            numLot = ''; // Si le produit est en mode "serial", on n'affiche pas le numéro de lot mais les numéros de séries des produits à la place
+            // Si le produit est en mode "serial", on affiche les numéro de séries des produits à la place du numéro de lot
+            stock.forEach(item => {
+              if(item.batch_number !== '' && item.batch_number != 'N/A') {
+                if(numLot !== '') {
+                  numLot += ' | '; // Séparateur entre les différents numéros de série si il y en a plusieurs
+                }
+                numLot += item.batch_number.slice(-4); // Afficher les 4 derniers caractères du numéro de série pour différencier les produits, à adapter selon vos besoins
+              }
+            });
+          }
+
           // On prépare les informations à afficher sur l'étiquette 
           await MinewService.addGoodsToStore({
               productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
-              lot: stock[0].batch_number || "N/A",
+              lot: numLot,
               name: product.label,
               quantity: 0,
               emplacement: device.emplacement,
