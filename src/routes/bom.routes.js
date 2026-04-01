@@ -57,7 +57,6 @@ router.post("/:id/picking", async (req, res) => {
             if(element.emplacement && element.emplacement.includes('FU.')) {
               descriptionComplementaire = bom.bom_description.match(/(\d+)\s*maillons/i)[1]
             }
-            console.log('Description complémentaire pour le produit', line.fk_product, ':', descriptionComplementaire);
             await Global.prepareESL(pickingId, line, element, stock, descriptionComplementaire);
 
             // Get Column to blink

@@ -56,7 +56,9 @@ class Global {
 
     if(element.emplacement && element.emplacement.includes('FU.') && complementInformation !== '') {
       // Il faut afficher le nombre de maillon et de brin dans la quantité à prélevé pour les produits de type câble (FU.)
-      stockDisplay += ` (${complementInformation})`;
+      console.log('Description complémentaire pour le produit', line.fk_product, ':', complementInformation);
+      let maillons = complementInformation.match(/(\d+)\s*maillons/i);
+      stockDisplay += ` (${maillons})`;
     }
 
     // Ajouter la ligne de détail au picking
