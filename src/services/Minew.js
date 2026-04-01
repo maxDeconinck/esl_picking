@@ -190,7 +190,10 @@ class Minew {
     let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/goods/addToStore`
     // SI data.stock est un nombre, on le formate avec 2 décimales pour éviter les problèmes d'affichage sur les étiquettes Minew qui n'affichent pas correctement les nombres avec trop de décimales ou les nombres à virgule flottante non formatés
     if (typeof data.stock === 'number') {
-      data.stock = data.stock.toFixed(2)
+      // Si c'est un nombre entier, on n'affiche pas les décimales, sinon on affiche avec 2 décimales
+      if (!Number.isInteger(data.stock)) {
+        data.stock = data.stock.toFixed(2)
+      }
     }
     let payload = {
       id: data.productId,
@@ -246,7 +249,10 @@ class Minew {
 
     // SI data.stock est un nombre, on le formate avec 2 décimales pour éviter les problèmes d'affichage sur les étiquettes Minew qui n'affichent pas correctement les nombres avec trop de décimales ou les nombres à virgule flottante non formatés
     if (typeof data.stock === 'number') {
-      data.stock = data.stock.toFixed(2)
+      // Si c'est un nombre entier, on n'affiche pas les décimales, sinon on affiche avec 2 décimales
+      if (!Number.isInteger(data.stock)) {
+        data.stock = data.stock.toFixed(2)
+      }
     }
     let payload = {
       id: data.productId,
