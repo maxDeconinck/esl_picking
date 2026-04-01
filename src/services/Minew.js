@@ -247,7 +247,7 @@ class Minew {
     // SI data.stock est un nombre, on le formate avec 2 décimales pour éviter les problèmes d'affichage sur les étiquettes Minew qui n'affichent pas correctement les nombres avec trop de décimales ou les nombres à virgule flottante non formatés
     if (typeof data.stock === 'number') {
       data.stock = data.stock.toFixed(2)
-
+    }
     let payload = {
       id: data.productId,
       storeId: this.storeId,
