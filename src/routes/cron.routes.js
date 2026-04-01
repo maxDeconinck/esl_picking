@@ -81,7 +81,7 @@ router.post("/button", async (req, res) => {
     }
 
     // Arrêter le clignotement de l'étiquette
-    // await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
+    await MinewService.blinkTag(device.mac, { total: 0, color: 0 });
 
     if(device.mode === 0) { // Si l'étiquette est en mode picking
       // Chercher un picking actif avec ce produit
@@ -113,10 +113,10 @@ router.post("/button", async (req, res) => {
             await Device.update(device.id, { mode: 1 });
 
             // On éteint la colonne associé si il n'y a pu d'étiquette de ce côté du rack en picking
-            // let rack = device.emplacement.split('.')[0]; // Supposons que l'emplacement est au format "rack-colonne-étage" et que le rack est la première partie
-            // if(await Picking.hasOtherPickingForThisRack(picking.id, rack) === false) {
-            //   await MinewService.blinkTagByPosition(rack, { total: 0, color: 0 }); // On éteint la colonne
-            // }
+            let rack = device.emplacement.split('.')[0]; // Supposons que l'emplacement est au format "rack-colonne-étage" et que le rack est la première partie
+            if(await Picking.hasOtherPickingForThisRack(picking.id, rack) === false) {
+              await MinewService.blinkTagByPosition(rack, { total: 0, color: 0 }); // On éteint la colonne
+            }
           }
 
           break; // On ne traite qu'un seul picking à la fois
