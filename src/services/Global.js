@@ -65,6 +65,22 @@ class Global {
       }
     }
 
+    if(element.serial === 'serial') {
+      if(line.quantity == 1 ){
+        lotNumber = stock[0].batch_number; // Si la quantité à prélever est de 1, on affiche le numéro de série complet
+      } else {
+        // Si le produit est en mode "serial", on n'affiche pas le numéro de lot mais les numéros de séries des produits à la place
+        lotNumber = await Global.formatLots(stock.map(s => s.batch_number));
+        // On garde uniquement le nombre de numéro de série égal à la quantité demandée (ex : si on doit prélever 2 produits identiques avec les numéros de série "1234" et "5678", on affiche "1234 | 5678" sur l'étiquette)
+        lotNumber = lotNumber.slice(0, line.quantity);
+
+        // Convertion en string si lotNumber est un tableau (cas où il y a plusieurs numéros de série à afficher), en séparant les numéros de série par " | "
+        if(Array.isArray(lotNumber)) {
+          lotNumber = lotNumber.join(" | ");
+        }
+      }      
+    }
+
     // Ajouter la ligne de détail au picking
     await Picking.addDetail({
       fk_picking: pickingId,
@@ -103,6 +119,40 @@ class Global {
 
     // Passer l'étiquette en mode picking
     await Device.update(element.id, { mode: 0 });
+  }
+
+  /**
+   * 
+   * @param {*} batches 
+   * @returns {Promise<Array>} Formater les numéros de lots pour n'afficher que les 4 derniers chiffres, en ajoutant des lettres si nécessaire pour différencier les doublons
+   * Règles métiers pour formater les numéros de lots :
+   * 1. Par défaut, on affiche les 4 derniers chiffres du numéro de lot.
+   * 2. Si plusieurs lots ont les mêmes 4 derniers chiffres, on ajoute les lettres précédant ces chiffres pour différencier les lots.
+   *    Par exemple, si on a les lots "ABC1234" et "DEF1234", on affichera "ABC1234" et "DEF1234" au lieu de "1234" pour les deux.
+   * 3. Si un lot n'a pas de lettres précédant les 4 derniers chiffres, on l'affiche tel quel (ex : "1234").
+   * 4. Si un lot a moins de 4 caractères, on affiche le lot entier (ex : "123").
+   * 5. Si un lot est vide ou null, on affiche "N/A".
+   */
+  static async formatLots(batches) {
+
+    const base = batches.map(b => ({
+      full: b,
+      short: b.slice(-4)
+    }));
+
+    const counts = {};
+    base.forEach(b => {
+      counts[b.short] = (counts[b.short] || 0) + 1;
+    });
+
+    base.forEach(b => {
+      if (counts[b.short] > 1) {
+        const letters = b.full.match(/[A-Z]+/g)?.pop() || '';
+        b.short = `${letters}${b.short}`;
+      }
+    });
+
+    return base.map(b => b.short);
   }
 }
 

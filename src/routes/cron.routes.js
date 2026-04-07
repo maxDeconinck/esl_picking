@@ -4,6 +4,7 @@ import DolibarrAPI from "../services/DolibarrAPI.js";
 import MinewService from "../services/Minew.js";
 import logger from "../services/Logger.js";
 import Picking from "../models/Picking.js";
+import Global from "../services/Global.js";
 
 const router = express.Router();
 
@@ -174,14 +175,11 @@ router.get('/check-stuck-pickings', async (req, res) => {
           if(device.serial === 'serial'){
             numLot = ''; // Si le produit est en mode "serial", on n'affiche pas le numéro de lot mais les numéros de séries des produits à la place
             // Si le produit est en mode "serial", on affiche les numéro de séries des produits à la place du numéro de lot
-            stock.forEach(item => {
-              if(item.batch_number !== '' && item.batch_number != 'N/A') {
-                if(numLot !== '') {
-                  numLot += ' | '; // Séparateur entre les différents numéros de série si il y en a plusieurs
-                }
-                numLot += item.batch_number.slice(-4); // Afficher les 4 derniers caractères du numéro de série pour différencier les produits, à adapter selon vos besoins
-              }
-            });
+            numLot = await Global.formatLots(stock.map(s => s.batch_number));
+            // Convertion en string si numLot est un tableau (cas où il y a plusieurs numéros de série à afficher), en séparant les numéros de série par " | "
+            if(Array.isArray(numLot)) {
+              numLot = numLot.join(" | ");
+            }
           }
 
           // On prépare les informations à afficher sur l'étiquette 
