@@ -23,6 +23,7 @@ class Bom {
           llx_bom_bomline.rowid as line_id,
           llx_bom_bomline.fk_product as product_id,
           llx_mrp_mo.qty as quantity,
+          llx_bom_bomline.qty as chaine_longueur, -- Ajouter la longueur de la chaîne depuis la table llx_bom_bomline
           llx_bom_bomline.description as line_description,
           p.label as product_label
         FROM llx_bom_bomline
