@@ -79,6 +79,7 @@ class Bom {
           id: row.line_id,
           fk_product: row.product_id,
           quantity: row.quantity,
+          total_quantity: row.total_quantity, // Quantité totale à préparer pour ce type de picking
           chaine_longueur: row.chaine_longueur, // Ajouter la longueur de la chaîne à la ligne de commande
           unit_price: row.unit_price,
           total_ht: row.line_total_ht,

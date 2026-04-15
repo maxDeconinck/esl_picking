@@ -46,10 +46,9 @@ router.post("/:id/picking", async (req, res) => {
       // Pour chaque produit on va chercher le device à allumé en fonction des règles métiers
       let deviceToBlink = await Global.getDeviceToBlink(line, device);
 
-      // console.log(`Device to blink for product ${line.fk_product} on order line ${line.id}:`, deviceToBlink, line.stock_locations);
-
       if (deviceToBlink && deviceToBlink.length > 0) {
         for (const element of deviceToBlink) {
+          line.quantity = line.total_quantity; // On utilise la quantité totale à préparer pour ce type de picking
 
           let stock = line.stock_locations.filter(s => s.warehouse_ref === element.emplacement);
           let descriptionComplementaire = null;
