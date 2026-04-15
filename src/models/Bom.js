@@ -22,9 +22,8 @@ class Bom {
           llx_mrp_mo.status as bom_status,
           llx_bom_bomline.rowid as line_id,
           llx_bom_bomline.fk_product as product_id,
-          llx_bom_bomline.qty as quantity,
           llx_mrp_mo.qty as nb_chaine, -- Ajouter le nombre de chaînes à la ligne de commande
-          (llx_bom_bomline.qty * llx_mrp_mo.qty) as total_quantity,
+          (llx_bom_bomline.qty * llx_mrp_mo.qty) as quantity,
           llx_bom_bomline.description as line_description,
           p.label as product_label
         FROM llx_bom_bomline
@@ -79,11 +78,7 @@ class Bom {
           id: row.line_id,
           fk_product: row.product_id,
           quantity: row.quantity,
-          total_quantity: row.total_quantity, // Quantité totale à préparer pour ce type de picking
-          chaine_longueur: row.chaine_longueur, // Ajouter la longueur de la chaîne à la ligne de commande
-          unit_price: row.unit_price,
-          total_ht: row.line_total_ht,
-          total_ttc: row.line_total_ttc,
+          chaine_longueur: row.quantity / row.nb_chaine, // Ajouter la longueur de la chaîne à la ligne de commande
           description: row.line_description,
           product_type: row.product_type,
           product_details: {
@@ -95,7 +90,6 @@ class Bom {
           stock_locations: row.stock_locations || [] // Ajouter les infos de stock ou un tableau vide si aucune info
         }))
       };
-
       return bomData;
     } catch (error) {
       logger.error(`Error finding BOM with details by ID: ${id}`, {

@@ -59,7 +59,13 @@ class Global {
       // Exemple contenu : 93 maillons pour une longueur de 1,62 m par brin de chaine
       let maillons = complementInformation.match(/(\d+)\s*maillons/i);
       let longueursBrin = complementInformation.match(/longueur\s*de\s*([\d.,]+)\s*m/i);
-      let NbBrins = Math.floor(line.quantity / longueursBrin[1].replace(',', '.')); // Calcul du nombre de brins à prélever en fonction de la quantité demandée et de la longueur d'un brin
+      let NbBrins = 0;
+      if(maillons !== null && longueursBrin !== null) {
+        if(longueursBrin.length > 1) {
+          longueursBrin[1] = longueursBrin[1].replace(',', '.'); // Remplacer la virgule par un point pour convertir en nombre à virgule flottante
+          NbBrins = Math.floor(line.quantity / longueursBrin[1].replace(',', '.')); // Calcul du nombre de brins à prélever en fonction de la quantité demandée et de la longueur d'un brin
+        }
+      }
       if(maillons) {
         stockDisplay = `${maillons[1]}*${NbBrins} x${line.nb_chaine}`; // Affichage du nombre de maillons et de brins à prélever
       }
