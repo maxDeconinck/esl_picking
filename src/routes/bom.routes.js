@@ -40,8 +40,14 @@ router.post("/:id/picking", async (req, res) => {
 
 
     for (const line of bom.lines) {
+
       // Check si une etiquette est associé à ce produit
       const device = await Device.findByProductId(line.fk_product);
+
+      if(!device) {
+        logger.warn(`No device found for product ${line.fk_product} in BOM ${bomId}`);
+        continue; // Passer à la ligne suivante si aucun device n'est trouvé
+      }
 
       // Pour chaque produit on va chercher le device à allumé en fonction des règles métiers
       let deviceToBlink = await Global.getDeviceToBlink(line, device);
