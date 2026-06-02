@@ -298,7 +298,7 @@ class Minew {
       labelMac: data.mac,
       storeId: this.storeId,
       demoIdMap : {
-        A: '2026695741933621248'
+        A: '2061729310527459328'
       },
       goodsMap : {
         id: data.productId,
