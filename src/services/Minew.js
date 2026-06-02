@@ -14,6 +14,7 @@ class Minew {
     this.token = null
     this.expiresAt = 0
     this.logger = Logger || console
+    this.demoId = '2061729310527459328'
   }
 
   async loadTokenFromFile() {
@@ -298,7 +299,7 @@ class Minew {
       labelMac: data.mac,
       storeId: this.storeId,
       demoIdMap : {
-        A: '2061729310527459328'
+        A: this.demoId
       },
       goodsMap : {
         id: data.productId,
@@ -346,12 +347,7 @@ class Minew {
     if (!tagId) throw new Error('tagId is required')
     const token = await this.getToken()
     let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/label/multiScreenBinding`
-    let code = '2026214340654272512' // Picking par défaut
-    if(mode == "inventory") {
-      code = '2026695741933621248'
-    } else if (mode == "picking") {
-      code = '2026214340654272512'
-    }
+    let code = this.demoId
 
     let payload = {
       brushDataTemplateList:
