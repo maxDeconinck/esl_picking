@@ -32,15 +32,31 @@ router.get('/update-all-screens', async (req, res) => {
           }
 
           // On prépare les informations à afficher sur l'étiquette 
+          let stockToDisplay = stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total;
+          if(stockToDisplay && stockToDisplay % 1 !== 0) {
+            stockToDisplay = stockToDisplay.toFixed(2); // Afficher 2 décimales si la quantité n'est pas un entier
+          }
+
+          let numLot = stock[0].batch_number || "N/A";
+          if(device.serial === 'serial'){
+            numLot = ''; // Si le produit est en mode "serial", on n'affiche pas le numéro de lot mais les numéros de séries des produits à la place
+            // Si le produit est en mode "serial", on affiche les numéro de séries des produits à la place du numéro de lot
+            numLot = await Global.formatLots(stock.map(s => s.batch_number));
+            // Convertion en string si numLot est un tableau (cas où il y a plusieurs numéros de série à afficher), en séparant les numéros de série par " | "
+            if(Array.isArray(numLot)) {
+              numLot = numLot.join(" | ");
+            }
+          }
+
           await MinewService.refreshGoodsInStore({
-              productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
-              lot: stock[0].batch_number || "N/A",
-              name: product.label,
-              quantity: 0,
-              emplacement: device.emplacement,
-              stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
-              ref: product.ref,
-              qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
+            productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
+            lot: numLot,
+            name: product.label,
+            quantity: 0,
+            emplacement: device.emplacement,
+            stock: stockToDisplay,
+            ref: product.ref,
+            qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
           });
         
           // Remettre l'étiquette en mode inventaire (mode 1)
