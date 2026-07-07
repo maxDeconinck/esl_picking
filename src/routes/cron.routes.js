@@ -21,10 +21,13 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
           console.warn(`Stock information not found for product ${device.fk_product} at location ${device.emplacement}, skipping device ${device.id}`);
           continue;
         } else {
-          if(stock[0].product_id !== device.fk_product) {
+          // Vérifier que product_id existe et est valide avant de mettre à jour
+          if(stock[0].product_id && stock[0].product_id !== device.fk_product) {
             nbErrors++;
             console.warn(`Mismatch for device ${device.id}: expected product ${device.fk_product} but found ${stock[0].product_id} at location ${device.emplacement}. Updating...`);
             await Device.update(device.id, { fk_product: stock[0].product_id });
+          } else if(!stock[0].product_id) {
+            console.warn(`Product ID is empty or invalid in stock data for location ${device.emplacement}, skipping device ${device.id}`);
           }
         }
       }
