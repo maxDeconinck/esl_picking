@@ -8,6 +8,38 @@ import Global from "../services/Global.js";
 
 const router = express.Router();
 
+router.get('/fix-id-product-emplacement', async (req, res) => {
+  try {
+    const devices = await Device.findAll();
+    let nbErrors = 0;
+
+    for (const device of devices) {
+      if (device.fk_product && device.emplacement) {
+        // On récupère le produit associé à cet emplacement depuis Dolibarr pour vérifier si l'id_product_emplacement est correct
+        const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
+        if(!stock || stock.length === 0) {
+          console.warn(`Stock information not found for product ${device.fk_product} at location ${device.emplacement}, skipping device ${device.id}`);
+          continue;
+        } else {
+          if(stock[0].product_id !== device.fk_product) {
+            nbErrors++;
+            console.warn(`Mismatch for device ${device.id}: expected product ${device.fk_product} but found ${stock[0].product_id} at location ${device.emplacement}. Updating...`);
+            await Device.update(device.id, { fk_product: stock[0].product_id });
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `All devices updated with new id_product_emplacement. Total errors: ${nbErrors}`
+    });
+  } catch (error) {
+    console.error("Error updating devices:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
 router.get('/update-all-screens', async (req, res) => {
   try {
     const devices = await Device.findAll();
