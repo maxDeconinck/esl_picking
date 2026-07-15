@@ -541,7 +541,7 @@ router.post("/:id/update-screen", async (req, res) => {
     if (!device.fk_product) {
       await MinewService.addGoodsToStore({
         productId: 'temp-' + device.emplacement,
-        emplacement: device.emplacement,
+        emplacement: device.emplacement
       });
 
       // On associe à l'étiquette le template "no_product" pour indiquer qu'aucun produit n'est associé à l'étiquette et on arrête le processus de mise à jour de l'affichage
