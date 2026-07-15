@@ -348,7 +348,7 @@ class Minew {
     const token = await this.getToken()
     let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/label/multiScreenBinding`
     let code = this.demoId
-    if(mode === 'no_product') {
+    if(mode === 'no_product' || mode === 'no_data') {
       code = '2077377677513199616' // Template "no_product" pour indiquer qu'aucun produit n'est associé à l'étiquette
     }
 

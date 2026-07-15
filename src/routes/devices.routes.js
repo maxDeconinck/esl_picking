@@ -548,8 +548,9 @@ router.post("/:id/update-screen", async (req, res) => {
       await MinewService.changeTagDisplay(device.mac, {
         mode: "no_product",
         idData: 'temp-' + device.emplacement // On utilise un identifiant temporaire pour que Minew puisse faire le lien entre les données et l'étiquette
-      }); 
-      return res.status(400).json({ error: "Device is not associated with any product" });
+      });
+
+      return res.status(200).json({ error: "Device is not associated with any product" });
     }
 
     // On récupère les dernières informations du produit associé à l'étiquette depuis Dolibarr
