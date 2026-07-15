@@ -92,11 +92,15 @@ router.post("/:id/picking", async (req, res) => {
       // Check si une etiquette est associé à ce produit
       const device = await Device.findByProductId(line.fk_product);
 
+
+      if (!device || device.length === 0) {
+        logger.warn(`No device associated with product ${line.fk_product} on order line ${line.id}`);
+        continue; // Skip this line if no device is associated
+      }
       // Pour chaque produit on va chercher le device à allumé en fonction des règles métiers
       let deviceToBlink = await Global.getDeviceToBlink(line, device);
 
       // console.log(`Device to blink for product ${line.fk_product} on order line ${line.id}:`, deviceToBlink, line.stock_locations);
-
       if (deviceToBlink && deviceToBlink.length > 0) {
         for (const element of deviceToBlink) {
 
