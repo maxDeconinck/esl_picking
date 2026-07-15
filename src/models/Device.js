@@ -105,8 +105,9 @@ class Device {
       }
     }
 
-  /** 
-   * Mettre à jour une étiquette * @param {number} id - ID de l'étiquette à mettre à jour
+  /**
+   * Mettre à jour une étiquette
+   * @param {number} id - ID de l'étiquette à mettre à jour
    * @param {Object} deviceData - Données de l'étiquette à mettre à jour
    * @param {string} [deviceData.name] - Nouveau nom de l'étiquette
    * @param {string} [deviceData.mac] - Nouvelle adresse MAC de l'étiquette
@@ -156,7 +157,7 @@ class Device {
       }
       if (size !== undefined) {
         fields.push("de_size = ?");
-        values.push(size);
+        values.push(size.trim());
       }
 
       if (fields.length === 0) {
@@ -193,9 +194,9 @@ class Device {
     try {
       const [result] = await pool.execute(
         "INSERT INTO DEVICES (de_name, de_mac, de_key, de_pos, de_fk_product, de_type, de_serial, de_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [name, mac, key, emplacement, fk_product || null, type || null, serial || null, size || null]
+        [
           name,
-          mac,
+          mac ? mac.trim() : mac,
           key ? key.trim() : key,
           emplacement ? emplacement.trim().toUpperCase() : emplacement,
           fk_product || null,
