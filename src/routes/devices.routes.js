@@ -473,6 +473,7 @@ router.post("/:id/update-screen-manual", async (req, res) => {
     }
 
     if(!device.emplacement) {
+      console.log('temp-' + device.mac.slice(-5));
       await MinewService.addGoodsToStore({
         productId: 'temp-' + device.mac.slice(-5), // On utilise les 4 derniers caractères de l'adresse MAC pour créer un identifiant temporaire unique
         ref: device.mac.slice(-5),
