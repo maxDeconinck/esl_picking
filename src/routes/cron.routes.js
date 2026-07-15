@@ -1,4 +1,5 @@
 import express from "express";
+import pool from "../config/database.js";
 import Device from "../models/Device.js";
 import DolibarrAPI from "../services/DolibarrAPI.js";
 import MinewService from "../services/Minew.js";
@@ -44,125 +45,161 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
   }
 });
 
-router.get('/update-all-screens', async (req, res) => {
+/**
+ * GET /cron/reset-unassigned-devices
+ * Réinitialiser 5 étiquettes sans emplacement ni produit associé
+ * Utile pour nettoyer les étiquettes orphelines
+ */
+router.get('/reset-unassigned-devices', async (req, res) => {
   try {
-    // Lancer la mise à jour en arrière-plan et retourner immédiatement
-    (async () => {
+    // Trouver 5 étiquettes sans emplacement ET sans produit
+    const [unassignedDevices] = await pool.execute(
+      "SELECT de_id AS 'id', de_mac AS 'mac', de_name AS 'name' FROM DEVICES WHERE (de_pos IS NULL OR de_pos = '') AND de_fk_product IS NULL LIMIT 5"
+    );
+
+    if (!unassignedDevices || unassignedDevices.length === 0) {
+      return res.json({
+        success: true,
+        message: "Aucune étiquette sans emplacement ni produit trouvée",
+        devices_updated: 0
+      });
+    }
+
+    // Réinitialiser chaque étiquette
+    for (const device of unassignedDevices) {
       try {
-        const devices = await Device.findAll();
-        let successCount = 0;
-        let errorCount = 0;
+        // Réinitialiser le mode à 1 (inventaire)
+        await Device.update(device.id, { mode: 1 });
 
-        for (const device of devices) {
-          try {
-            if (device.fk_product && device.emplacement) {
-              if (!device.mac) {
-                console.warn(`Device ${device.id} has no MAC address, skipping screen update`);
-                errorCount++;
-              } else {
-                // On récupère les dernières informations du produit associé à l'étiquette depuis Dolibarr
-                const product = await DolibarrAPI.getProduct(device.fk_product);
-                const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
+        // Afficher un message "no_data" sur l'étiquette
+        if (device.mac) {
+          await MinewService.addGoodsToStore({
+            productId: 'reset-' + device.id,
+            ref: `RESET-${device.id}`,
+          });
 
-                if (!stock || stock.length === 0) {
-                    console.warn(`Stock information not found for product ${device.fk_product} at location ${device.emplacement}, skipping device ${device.id}`);
-                    errorCount++;
-                    continue;
-                }
+          await new Promise(resolve => setTimeout(resolve, 500));
 
-                if (!product) {
-                    console.warn(`Associated product not found for product ID ${device.fk_product}, skipping device ${device.id}`);
-                    errorCount++;
-                    continue;
-                }
-
-                // On prépare les informations à afficher sur l'étiquette 
-                let stockToDisplay = stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total;
-                if(stockToDisplay && stockToDisplay % 1 !== 0) {
-                  stockToDisplay = stockToDisplay.toFixed(2); // Afficher 2 décimales si la quantité n'est pas un entier
-                }
-
-                let numLot = stock[0].batch_number || "N/A";
-                if(device.serial === 'serial'){
-                  numLot = ''; // Si le produit est en mode "serial", on n'affiche pas le numéro de lot mais les numéros de séries des produits à la place
-                  // Si le produit est en mode "serial", on affiche les numéro de séries des produits à la place du numéro de lot
-                  numLot = await Global.formatLots(stock.map(s => s.batch_number));
-                  // Convertion en string si numLot est un tableau (cas où il y a plusieurs numéros de série à afficher), en séparant les numéros de série par " | "
-                  if(Array.isArray(numLot)) {
-                    numLot = numLot.join(" | ");
-                  }
-                }
-
-                await MinewService.refreshGoodsInStore({
-                  productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
-                  lot: numLot,
-                  name: product.label,
-                  quantity: 0,
-                  emplacement: device.emplacement,
-                  stock: stockToDisplay,
-                  ref: product.ref,
-                  qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
-                });
-              
-                // Remettre l'étiquette en mode inventaire (mode 1)
-                await Device.update(device.id, { mode: 1 });
-                
-                console.log(`✅ Device ${device.mac} screen updated successfully`);
-                successCount++;
-              }
-            }
-            if(!device.fk_product && device.emplacement) {
-              console.warn(`Device ${device.id} has no associated product, show "no product" screen`);
-              
-              await MinewService.addGoodsToStore({
-                productId: 'temp-' + device.emplacement,
-                emplacement: device.emplacement
-              });
-
-              await new Promise(resolve => setTimeout(resolve, 2000)); // On attend 2 secondes pour que Minew ait le temps de créer l'entrée dans le store avant de changer l'affichage
-
-              // On associe à l'étiquette le template "no_product" pour indiquer qu'aucun produit n'est associé à l'étiquette et on arrête le processus de mise à jour de l'affichage
-              await MinewService.changeTagDisplay(device.mac, {
-                mode: "no_product",
-                idData: 'temp-' + device.emplacement // On utilise un identifiant temporaire pour que Minew puisse faire le lien entre les données et l'étiquette
-              });
-              successCount++;
-            }
-            if(!device.emplacement) {
-              await MinewService.addGoodsToStore({
-                productId: 'temp-' + device.mac.slice(-5), // On utilise les 4 derniers caractères de l'adresse MAC pour créer un identifiant temporaire unique
-                ref: device.mac.slice(-5),
-              });
-
-              await new Promise(resolve => setTimeout(resolve, 2000)); // On attend 2 secondes pour que Minew ait le temps de créer l'entrée dans le store avant de changer l'affichage
-
-              await MinewService.changeTagDisplay(device.mac, {
-                idData: 'no_data',
-                mode: "no_data",
-                device: device
-              });
-              successCount++;
-            }
-          } catch (deviceError) {
-            console.error(`Error processing device ${device.id}:`, deviceError);
-            errorCount++;
-          }
+          await MinewService.changeTagDisplay(device.mac, {
+            idData: 'reset-' + device.id,
+            mode: "no_data",
+            device: device
+          });
         }
 
-        console.log(`🎉 Background update completed: ${successCount} success, ${errorCount} errors`);
-      } catch (backgroundError) {
-        console.error("Background update error:", backgroundError);
+        console.log(`✅ Device ${device.id} (${device.mac}) réinitialisé`);
+      } catch (deviceError) {
+        console.error(`Erreur lors de la réinitialisation du device ${device.id}:`, deviceError);
       }
-    })();
+    }
 
-    // Retourner immédiatement
     res.json({
       success: true,
-      message: "Background update launched. Check server logs for progress.",
-      timestamp: new Date().toISOString()
+      message: `${unassignedDevices.length} étiquette(s) réinitialisée(s)`,
+      devices_updated: unassignedDevices.length,
+      devices: unassignedDevices.map(d => ({ id: d.id, mac: d.mac, name: d.name }))
     });
   } catch (error) {
-    console.error("Error starting background update:", error);
+    console.error("Error resetting unassigned devices:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
+router.get('/update-all-screens', async (req, res) => {
+  try {
+    const devices = await Device.findAll();
+
+    for (const device of devices) {
+      if (device.fk_product && device.emplacement) {
+        if (!device.mac) {
+          console.warn(`Device ${device.id} has no MAC address, skipping screen update`);
+        } else {
+          // On récupère les dernières informations du produit associé à l'étiquette depuis Dolibarr
+          const product = await DolibarrAPI.getProduct(device.fk_product);
+          const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
+
+          if (!stock || stock.length === 0) {
+              console.warn(`Stock information not found for product ${device.fk_product} at location ${device.emplacement}, skipping device ${device.id}`);
+              continue;
+          }
+
+          if (!product) {
+              console.warn(`Associated product not found for product ID ${device.fk_product}, skipping device ${device.id}`);
+              continue;
+          }
+
+          // On prépare les informations à afficher sur l'étiquette 
+          let stockToDisplay = stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total;
+          if(stockToDisplay && stockToDisplay % 1 !== 0) {
+            stockToDisplay = stockToDisplay.toFixed(2); // Afficher 2 décimales si la quantité n'est pas un entier
+          }
+
+          let numLot = stock[0].batch_number || "N/A";
+          if(device.serial === 'serial'){
+            numLot = ''; // Si le produit est en mode "serial", on n'affiche pas le numéro de lot mais les numéros de séries des produits à la place
+            // Si le produit est en mode "serial", on affiche les numéro de séries des produits à la place du numéro de lot
+            numLot = await Global.formatLots(stock.map(s => s.batch_number));
+            // Convertion en string si numLot est un tableau (cas où il y a plusieurs numéros de série à afficher), en séparant les numéros de série par " | "
+            if(Array.isArray(numLot)) {
+              numLot = numLot.join(" | ");
+            }
+          }
+
+          await MinewService.refreshGoodsInStore({
+            productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
+            lot: numLot,
+            name: product.label,
+            quantity: 0,
+            emplacement: device.emplacement,
+            stock: stockToDisplay,
+            ref: product.ref,
+            qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
+          });
+        
+          // Remettre l'étiquette en mode inventaire (mode 1)
+          await Device.update(device.id, { mode: 1 });
+          
+          console.log(`✅ Device ${device.mac} screen updated successfully`);
+        }
+      }
+      if(!device.fk_product && device.emplacement) {
+        console.warn(`Device ${device.id} has no associated product, show "no product" screen`);
+        
+        await MinewService.addGoodsToStore({
+          productId: 'temp-' + device.emplacement,
+          emplacement: device.emplacement
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 2000)); // On attend 2 secondes pour que Minew ait le temps de créer l'entrée dans le store avant de changer l'affichage
+
+        // On associe à l'étiquette le template "no_product" pour indiquer qu'aucun produit n'est associé à l'étiquette et on arrête le processus de mise à jour de l'affichage
+        await MinewService.changeTagDisplay(device.mac, {
+          mode: "no_product",
+          idData: 'temp-' + device.emplacement // On utilise un identifiant temporaire pour que Minew puisse faire le lien entre les données et l'étiquette
+        });
+      }
+      if(!device.emplacement) {
+        await MinewService.addGoodsToStore({
+          productId: 'temp-' + device.mac.slice(-5), // On utilise les 4 derniers caractères de l'adresse MAC pour créer un identifiant temporaire unique
+          ref: device.mac.slice(-5),
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 2000)); // On attend 2 secondes pour que Minew ait le temps de créer l'entrée dans le store avant de changer l'affichage
+
+        await MinewService.changeTagDisplay(device.mac, {
+          idData: 'no_data',
+          mode: "no_data",
+          device: device
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "All device screens updated successfully"
+    });
+  } catch (error) {
+    console.error("Error updating all device screens:", error);
     res.status(500).json({ error: error.message || "Internal server error" });
   }
 });
