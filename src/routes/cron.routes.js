@@ -55,9 +55,13 @@ router.get('/reset-unassigned-devices', async (req, res) => {
   try {
     const forceReset = req.query.force === 'true';
     
-    // Construire la requête
-    let query = "SELECT de_id AS 'id', de_mac AS 'mac', de_name AS 'name' FROM DEVICES WHERE (de_pos IS NULL OR de_pos = '') AND de_fk_product IS NULL";
-    
+    if(req.query.mac && req.query.mac.length > 0) {
+      // Réinitialiser une étiquette spécifique par son MAC
+      let query = "SELECT de_id AS 'id', de_mac AS 'mac', de_name AS 'name' FROM DEVICES WHERE de_mac = ?";
+    } else {
+      // Construire la requête
+      let query = "SELECT de_id AS 'id', de_mac AS 'mac', de_name AS 'name' FROM DEVICES WHERE (de_pos IS NULL OR de_pos = '') AND de_fk_product IS NULL";
+    }
     // Si pas de force, exclure les étiquettes déjà réinitialisées
     if (!forceReset) {
       query += " AND de_reset_at IS NULL";
