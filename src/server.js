@@ -14,6 +14,8 @@ import pickingRoutes from "./routes/picking.routes.js";
 import cronRoutes from "./routes/cron.routes.js";
 import tokenRoutes from "./routes/token.routes.js";
 import bomRoutes from "./routes/bom.routes.js";
+import inventoryRoutes from "./routes/inventory.routes.js";
+import webhookRoutes from "./routes/webhook.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,9 +35,14 @@ app.use(express.static(join(__dirname, 'public')));
 // Middleware de logging pour toutes les requêtes
 app.use(requestLogger);
 
+// Routes WEBHOOK sans authentification (appelées directement par les étiquettes)
+app.use("/webhook", webhookRoutes);
+
+// Routes protégées avec authentification API
 app.use("/devices", authenticateApiToken, devicesRoutes);
 app.use("/orders", authenticateApiToken, ordersRoutes);
 app.use("/pickings", authenticateApiToken, pickingRoutes);
+app.use("/inventory", authenticateApiToken, inventoryRoutes);
 app.use("/cron", authenticateCron, cronRoutes);
 app.use("/token", authenticateApiToken, tokenRoutes);
 app.use("/bom", authenticateApiToken, bomRoutes);

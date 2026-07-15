@@ -4,6 +4,7 @@ import DolibarrAPI from "../services/DolibarrAPI.js";
 import MinewService from "../services/Minew.js";
 import logger from "../services/Logger.js";
 import Picking from "../models/Picking.js";
+import Inventory from "../models/Inventory.js";
 import Global from "../services/Global.js";
 
 const router = express.Router();
@@ -175,8 +176,44 @@ router.post("/button", async (req, res) => {
           console.log(`No matching picking detail found for device ${device.mac} (product ${device.fk_product}, location ${device.emplacement}) in picking ${picking.id}`);
         }
       }
+    } else if(device.mode === 1) { // Si l'étiquette est en mode inventaire
+      // Valider le device pour l'inventaire
+      const validated = await Device.validateInventory(device.id);
+      console.log(`✅ Device ${device.mac} validated for inventory`);
+
+      // Récupérer l'inventaire actif (le plus récent en in_progress)
+      const activeInventories = await Inventory.findAll({ 
+        limit: 1, 
+        status: 'in_progress' 
+      });
+
+      if (activeInventories && activeInventories.length > 0) {
+        const activeInventory = activeInventories[0];
+
+        // Incrémenter le compteur de succès
+        const currentInventory = await Inventory.findById(activeInventory.iv_id);
+        const newSuccessCount = (currentInventory.iv_successful || 0) + 1;
+        const remainingDevices = currentInventory.iv_selected_devices - newSuccessCount;
+
+        // Vérifier si tous les devices ont été validés
+        if (newSuccessCount >= currentInventory.iv_selected_devices) {
+          // Marquer l'inventaire comme complété
+          await Inventory.update(activeInventory.iv_id, {
+            status: 'completed',
+            successful: newSuccessCount,
+            completed_at: new Date()
+          });
+          console.log(`✅ Inventory ${activeInventory.iv_id} completed!`);
+        } else {
+          // Mettre à jour juste le compteur
+          await Inventory.update(activeInventory.iv_id, {
+            successful: newSuccessCount
+          });
+          console.log(`✅ Inventory progress: ${newSuccessCount}/${currentInventory.iv_selected_devices}`);
+        }
+      }
     } else {
-      console.log(`Device ${device.mac} clicked but is not in picking mode, no action taken`);
+      console.log(`Device ${device.mac} clicked but is not in picking or inventory mode, no action taken`);
     }
 
     res.json({

@@ -226,6 +226,61 @@ class DolibarrAPI {
       throw error;
     }
   }
+
+  /**
+   * Récupérer les mouvements de stock les plus récents pour les produits
+   * @param {number} days - Nombre de jours passés (par défaut 30)
+   * @returns {Promise<Array>}
+   */
+  async getStockMovements(days = 30) {
+    try {
+      const query = `
+        SELECT 
+          sm.fk_product,
+          p.ref as product_ref,
+          p.label as product_label,
+          MAX(sm.datem) as last_movement_date
+        FROM ${this.tablePrefix}stock_mouvement sm
+        JOIN ${this.tablePrefix}product p ON sm.fk_product = p.rowid
+        WHERE sm.datem >= DATE_SUB(NOW(), INTERVAL ? DAY)
+        GROUP BY sm.fk_product
+      `;
+      
+      const rows = await this.executeQuery(query, [days]);
+      
+      return rows.map(row => ({
+        product_id: row.fk_product,
+        product_ref: row.product_ref,
+        product_label: row.product_label,
+        last_movement_date: row.last_movement_date
+      }));
+    } catch (error) {
+      logger.error('Failed to fetch stock movements', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer la date du dernier mouvement de stock pour un produit
+   * @param {number} productId - ID du produit
+   * @returns {Promise<Date|null>}
+   */
+  async getLastStockMovementDate(productId) {
+    try {
+      const query = `
+        SELECT MAX(datem) as last_movement_date
+        FROM ${this.tablePrefix}stock_mouvement
+        WHERE fk_product = ?
+      `;
+      
+      const rows = await this.executeQuery(query, [productId]);
+      
+      return rows[0]?.last_movement_date || null;
+    } catch (error) {
+      logger.error(`Failed to fetch last stock movement for product ${productId}`, { error: error.message });
+      throw error;
+    }
+  }
 }
 
 // Export une instance unique (singleton)

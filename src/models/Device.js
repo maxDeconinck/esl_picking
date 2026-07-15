@@ -218,6 +218,42 @@ class Device {
   }
 
   /**
+   * Valider un device lors d'un inventaire
+   * @param {number} id - ID du device
+   * @returns {Promise<boolean>}
+   */
+  static async validateInventory(id) {
+    try {
+      const [result] = await pool.execute(
+        "UPDATE DEVICES SET de_last_inventory_check = NOW(), de_inventory_valid = 1 WHERE de_id = ?",
+        [id]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error validating device inventory:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mettre à jour la date du dernier contrôle d'inventaire
+   * @param {number} id - ID du device
+   * @returns {Promise<boolean>}
+   */
+  static async updateLastInventoryCheck(id) {
+    try {
+      const [result] = await pool.execute(
+        "UPDATE DEVICES SET de_last_inventory_check = NOW() WHERE de_id = ?",
+        [id]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error updating last inventory check:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Formater les données d'une étiquette pour la réponse API
    * @param {Object} device - Données brutes de l'étiquette
    * @returns {Object} Données formatées
