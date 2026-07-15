@@ -54,6 +54,11 @@ app.get("/view/pickings", (req, res) => {
   res.sendFile(join(__dirname, 'public', 'pickings.html'));
 });
 
+// Route pour lancer un inventaire ESL
+app.get("/view/inventory", (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'inventory.html'));
+});
+
 // Démarrer le serveur après avoir vérifié la connexion DB
 testConnection().then((connected) => {
   if (connected) {
