@@ -479,9 +479,8 @@ router.post("/:id/update-screen-manual", async (req, res) => {
         ref: device.mac.slice(-5),
       });
       await MinewService.changeTagDisplay(device.mac, {
-        idData: 'no_data',
         mode: "no_data",
-        device: device
+        idData: 'temp-' + device.mac.slice(-5)
       });
 
       return res.status(200).json({ error: "Device has no associated emplacement" });
