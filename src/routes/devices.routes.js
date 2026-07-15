@@ -245,7 +245,6 @@ router.post("/:id/blink", async (req, res) => {
     const columnName = device.emplacement.split('.')[0];
     const columnData = await Device.findByEmplacement(columnName);
 
-    console.log(`Blinking column ${columnName} associated with device ${deviceId}:`, columnData);
     if(columnData && columnData.type === 'colonne') {
       await Minew.blinkTag(columnData.mac, {total: 30, color: "cyan"}); // Clignote pendant 30 secondes
       await Device.update(columnData.id, { mode: 0 });
@@ -314,6 +313,15 @@ router.post("/emplacement/:id/blink", async (req, res) => {
       total: 90,      // 90 clignotements
       color: "magenta"
     });
+    
+    // Faire clignoter également la colonne lumineuse associée à l'étiquette
+    const columnName = device.emplacement.split('.')[0];
+    const columnData = await Device.findByEmplacement(columnName);
+
+    if(columnData && columnData.type === 'colonne') {
+      await Minew.blinkTag(columnData.mac, {total: 30, color: "cyan"}); // Clignote pendant 30 secondes
+      await Device.update(columnData.id, { mode: 0 });
+    }
 
     res.json({
       success: true,
