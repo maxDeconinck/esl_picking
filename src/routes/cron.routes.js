@@ -49,18 +49,31 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
  * GET /cron/reset-unassigned-devices
  * Réinitialiser 5 étiquettes sans emplacement ni produit associé
  * Utile pour nettoyer les étiquettes orphelines
+ * Paramètre optionnel: ?force=true pour forcer le re-reset
  */
 router.get('/reset-unassigned-devices', async (req, res) => {
   try {
-    // Trouver 5 étiquettes sans emplacement ET sans produit
-    const [unassignedDevices] = await pool.execute(
-      "SELECT de_id AS 'id', de_mac AS 'mac', de_name AS 'name' FROM DEVICES WHERE (de_pos IS NULL OR de_pos = '') AND de_fk_product IS NULL LIMIT 5"
-    );
+    const forceReset = req.query.force === 'true';
+    
+    // Construire la requête
+    let query = "SELECT de_id AS 'id', de_mac AS 'mac', de_name AS 'name' FROM DEVICES WHERE (de_pos IS NULL OR de_pos = '') AND de_fk_product IS NULL";
+    
+    // Si pas de force, exclure les étiquettes déjà réinitialisées
+    if (!forceReset) {
+      query += " AND de_reset_at IS NULL";
+    }
+    
+    query += " LIMIT 5";
+    
+    // Trouver les étiquettes sans emplacement ET sans produit
+    const [unassignedDevices] = await pool.execute(query);
 
     if (!unassignedDevices || unassignedDevices.length === 0) {
       return res.json({
         success: true,
-        message: "Aucune étiquette sans emplacement ni produit trouvée",
+        message: forceReset 
+          ? "Aucune étiquette à réinitialiser en mode force" 
+          : "Aucune étiquette sans emplacement ni produit trouvée à réinitialiser",
         devices_updated: 0
       });
     }
@@ -68,8 +81,14 @@ router.get('/reset-unassigned-devices', async (req, res) => {
     // Réinitialiser chaque étiquette
     for (const device of unassignedDevices) {
       try {
-        // Réinitialiser le mode à 1 (inventaire)
+        // Réinitialiser le mode à 1 (inventaire) et marquer comme reset
         await Device.update(device.id, { mode: 1 });
+        
+        // Marquer la date de reset dans la BD directement
+        await pool.execute(
+          "UPDATE DEVICES SET de_reset_at = NOW() WHERE de_id = ?",
+          [device.id]
+        );
 
         // Afficher un message "no_data" sur l'étiquette
         if (device.mac) {
