@@ -457,7 +457,7 @@ router.post("/:id/update-screen-manual", async (req, res) => {
       return res.status(400).json({ error: "Device has no MAC address" });
     }
 
-    if (!device.fk_product) {
+    if (!device.fk_product && device.emplacement) {
       await MinewService.addGoodsToStore({
         productId: 'temp-' + device.emplacement,
         emplacement: device.emplacement
@@ -470,6 +470,20 @@ router.post("/:id/update-screen-manual", async (req, res) => {
       });
 
       return res.status(200).json({ error: "Device is not associated with any product" });
+    }
+
+    if(!device.emplacement) {
+      await MinewService.addGoodsToStore({
+        productId: 'temp-' + device.mac.slice(-5), // On utilise les 4 derniers caractères de l'adresse MAC pour créer un identifiant temporaire unique
+        ref: device.mac.slice(-5),
+      });
+      await MinewService.changeTagDisplay(device.mac, {
+        idData: 'no_data',
+        mode: "no_data",
+        device: device
+      });
+
+      return res.status(200).json({ error: "Device has no associated emplacement" });
     }
 
     // On récupère les dernières informations du produit associé à l'étiquette depuis Dolibarr
@@ -549,7 +563,7 @@ router.post("/:id/update-screen", async (req, res) => {
       return res.status(400).json({ error: "Device has no MAC address" });
     }
 
-    if (!device.fk_product) {
+    if (!device.fk_product && device.emplacement) {
       await MinewService.addGoodsToStore({
         productId: 'temp-' + device.emplacement,
         emplacement: device.emplacement
@@ -562,6 +576,20 @@ router.post("/:id/update-screen", async (req, res) => {
       });
 
       return res.status(200).json({ error: "Device is not associated with any product" });
+    }
+
+    if(!device.emplacement) {
+      await MinewService.addGoodsToStore({
+        productId: 'temp-' + device.mac.slice(-5), // On utilise les 4 derniers caractères de l'adresse MAC pour créer un identifiant temporaire unique
+        ref: device.mac.slice(-5),
+      });
+      await MinewService.changeTagDisplay(device.mac, {
+        idData: 'no_data',
+        mode: "no_data",
+        device: device
+      });
+
+      return res.status(200).json({ error: "Device has no associated emplacement" });
     }
 
     // On récupère les dernières informations du produit associé à l'étiquette depuis Dolibarr

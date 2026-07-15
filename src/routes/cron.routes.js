@@ -101,6 +101,32 @@ router.get('/update-all-screens', async (req, res) => {
           console.log(`✅ Device ${device.mac} screen updated successfully`);
         }
       }
+      if(!device.fk_product && device.emplacement) {
+        console.warn(`Device ${device.id} has no associated product, show "no product" screen`);
+        
+        await MinewService.addGoodsToStore({
+          productId: 'temp-' + device.emplacement,
+          emplacement: device.emplacement
+        });
+
+        // On associe à l'étiquette le template "no_product" pour indiquer qu'aucun produit n'est associé à l'étiquette et on arrête le processus de mise à jour de l'affichage
+        await MinewService.changeTagDisplay(device.mac, {
+          mode: "no_product",
+          idData: 'temp-' + device.emplacement // On utilise un identifiant temporaire pour que Minew puisse faire le lien entre les données et l'étiquette
+        });
+      }
+      if(!device.emplacement) {
+        console.warn(`Device ${device.id} has no associated emplacement, show "no data" screen`);
+        await MinewService.addGoodsToStore({
+          productId: 'temp-' + device.mac.slice(-5), // On utilise les 4 derniers caractères de l'adresse MAC pour créer un identifiant temporaire unique
+          ref: device.mac.slice(-5),
+        });
+        await MinewService.changeTagDisplay(device.mac, {
+          idData: 'no_data',
+          mode: "no_data",
+          device: device
+        });
+      }
     }
 
     res.json({
