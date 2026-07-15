@@ -539,16 +539,6 @@ router.post("/:id/update-screen", async (req, res) => {
     }
 
     if (!device.fk_product) {
-      await MinewService.addGoodsToStore({
-        productId: 'temp-' + device.emplacement,
-        emplacement: device.emplacement
-      });
-
-      // On associe à l'étiquette le template "no_product" pour indiquer qu'aucun produit n'est associé à l'étiquette et on arrête le processus de mise à jour de l'affichage
-      await MinewService.changeTagDisplay(device.mac, {
-        mode: "no_product",
-        idData: 'temp-' + device.emplacement // On utilise un identifiant temporaire pour que Minew puisse faire le lien entre les données et l'étiquette
-      }); 
       return res.status(400).json({ error: "Device is not associated with any product" });
     }
 
