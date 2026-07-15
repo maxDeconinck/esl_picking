@@ -246,7 +246,7 @@ router.post("/:id/blink", async (req, res) => {
     const columnData = await Device.findByEmplacement(columnName);
 
     if(columnData && columnData.type === 'colonne') {
-      await Minew.blinkTag(columnData.mac, {total: 30, color: "cyan"}); // Clignote pendant 30 secondes
+      await MinewService.blinkTag(columnData.mac, {total: 30, color: "cyan"}); // Clignote pendant 30 secondes
       await Device.update(columnData.id, { mode: 0 });
     }
 
@@ -319,7 +319,7 @@ router.post("/emplacement/:id/blink", async (req, res) => {
     const columnData = await Device.findByEmplacement(columnName);
 
     if(columnData && columnData.type === 'colonne') {
-      await Minew.blinkTag(columnData.mac, {total: 30, color: "cyan"}); // Clignote pendant 30 secondes
+      await MinewService.blinkTag(columnData.mac, {total: 30, color: "cyan"}); // Clignote pendant 30 secondes
       await Device.update(columnData.id, { mode: 0 });
     }
 
