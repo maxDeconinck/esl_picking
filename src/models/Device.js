@@ -60,7 +60,7 @@ class Device {
     try {
       const [rows] = await pool.execute(
         "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type', de_serial AS 'serial', de_size AS 'size' FROM DEVICES WHERE de_pos = ?",
-        [emplacement]
+        [emplacement.trim().toUpperCase()]
       );
       return rows.length > 0 ? rows[0] : null;
     } catch (error) {
@@ -78,7 +78,7 @@ class Device {
     try {
       const [rows] = await pool.execute(
         "SELECT de_id AS 'id', de_mac AS 'mac', de_key AS 'key', de_name AS 'name', de_pos AS 'emplacement', de_fk_product AS 'fk_product', de_mode AS 'mode', de_type AS 'type', de_serial AS 'serial', de_size AS 'size' FROM DEVICES WHERE de_mac = ?",
-        [mac]
+        [mac.trim()]
       );
       return rows.length > 0 ? rows[0] : null;
     } catch (error) {
@@ -129,11 +129,11 @@ class Device {
       }
       if (mac) {
         fields.push("de_mac = ?");
-        values.push(mac);
+        values.push(mac.trim());
       }
       if (key) {
         fields.push("de_key = ?");
-        values.push(key);
+        values.push(key.trim());
       }
       if (mode !== undefined) {
         fields.push("de_mode = ?");
@@ -142,7 +142,7 @@ class Device {
       if (emplacement !== undefined) {
         fields.push("de_pos = ?");
         if(emplacement !== null)
-          values.push(emplacement.toUpperCase());
+          values.push(emplacement.trim().toUpperCase());
         else         
           values.push(null);
       }
@@ -194,6 +194,15 @@ class Device {
       const [result] = await pool.execute(
         "INSERT INTO DEVICES (de_name, de_mac, de_key, de_pos, de_fk_product, de_type, de_serial, de_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         [name, mac, key, emplacement, fk_product || null, type || null, serial || null, size || null]
+          name,
+          mac,
+          key ? key.trim() : key,
+          emplacement ? emplacement.trim().toUpperCase() : emplacement,
+          fk_product || null,
+          type ? type.trim() : type || null,
+          serial || null,
+          size ? size.trim() : size || null
+        ]
       );
       return result.insertId;
     } catch (error) {
