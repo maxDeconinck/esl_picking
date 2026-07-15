@@ -109,6 +109,8 @@ router.get('/update-all-screens', async (req, res) => {
           emplacement: device.emplacement
         });
 
+        await new Promise(resolve => setTimeout(resolve, 2000)); // On attend 2 secondes pour que Minew ait le temps de créer l'entrée dans le store avant de changer l'affichage
+
         // On associe à l'étiquette le template "no_product" pour indiquer qu'aucun produit n'est associé à l'étiquette et on arrête le processus de mise à jour de l'affichage
         await MinewService.changeTagDisplay(device.mac, {
           mode: "no_product",
@@ -116,11 +118,13 @@ router.get('/update-all-screens', async (req, res) => {
         });
       }
       if(!device.emplacement) {
-        console.warn(`Device ${device.id} has no associated emplacement, show "no data" screen`);
         await MinewService.addGoodsToStore({
           productId: 'temp-' + device.mac.slice(-5), // On utilise les 4 derniers caractères de l'adresse MAC pour créer un identifiant temporaire unique
           ref: device.mac.slice(-5),
         });
+
+        await new Promise(resolve => setTimeout(resolve, 2000)); // On attend 2 secondes pour que Minew ait le temps de créer l'entrée dans le store avant de changer l'affichage
+
         await MinewService.changeTagDisplay(device.mac, {
           idData: 'no_data',
           mode: "no_data",
