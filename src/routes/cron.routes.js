@@ -103,7 +103,7 @@ router.get('/reset-unassigned-devices', async (req, res) => {
         if (device.mac) {
           await MinewService.addGoodsToStore({
             productId: 'reset-' + device.id,
-            ref: `RESET-${device.id}`,
+            ref: `${device.mac.slice(-5)}`,
           });
 
           await new Promise(resolve => setTimeout(resolve, 500));
