@@ -72,7 +72,7 @@ router.get('/reset-unassigned-devices', async (req, res) => {
       query += " AND de_reset_at IS NULL";
     }
     
-    query += " LIMIT 5";
+    query += " LIMIT 20";
     
     // Trouver les étiquettes sans emplacement ET sans produit
     const [unassignedDevices] = await pool.execute(query, params);
