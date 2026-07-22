@@ -321,7 +321,7 @@ router.post("/emplacement/:id/blink", async (req, res) => {
     const columnData = await Device.findByEmplacement(columnName);
 
     if(columnData && columnData.type === 'colonne') {
-      await MinewService.blinkTag(columnData.mac, {total: 30, color: "magenta"}); // Clignote pendant 30 secondes
+      await MinewService.blinkTag(columnData.mac, {total: total, color: color}); // Clignote autant que l'étiquette
       await Device.update(columnData.id, { mode: 0 });
     }
 
