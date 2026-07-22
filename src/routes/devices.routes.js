@@ -299,6 +299,8 @@ router.patch("/:id/detach", async (req, res) => {
 router.post("/emplacement/:id/blink", async (req, res) => {
   try {
     const emplacement = req.params.id;
+    const color = req.query.color ?? "magenta";
+    const total = req.query.total ?? 90; // 90 clignotements
     const device = await Device.findByEmplacement(emplacement);
 
     if (!device) {
@@ -310,8 +312,8 @@ router.post("/emplacement/:id/blink", async (req, res) => {
     }
 
     const results = await MinewService.blinkTag(device.mac, {
-      total: 90,      // 90 clignotements
-      color: "magenta"
+      total: total,
+      color: color
     });
     
     // Faire clignoter également la colonne lumineuse associée à l'étiquette
