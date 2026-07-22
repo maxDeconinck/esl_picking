@@ -344,31 +344,44 @@ router.post("/emplacement/:id/blink", async (req, res) => {
 router.post("/product/:id/blink", async (req, res) => {
   try {
     const productId = parseInt(req.params.id, 10);
+    const color = req.query.color ?? "magenta";
+    const total = req.query.total ?? 90; // 90 clignotements
     const devices = await Device.findByProductId(productId);
+    const columnAlreadyBlink = []; // Liste pour suivre les colonnes déjà clignotées
 
     if (devices.length === 0) {
       return res.status(404).json({ error: "No devices found for this product" });
     }
 
+    // faire clignoter également la colonne lumineuse associée à chaque étiquette
+    for (const device of devices) {
+      const columnName = device.emplacement.split('.')[0];
+      const columnData = await Device.findByEmplacement(columnName);
+
+      if(columnData && columnData.type === 'colonne' && !columnAlreadyBlink.includes(columnData.id)) {
+        await MinewService.blinkTag(columnData.mac, {total: total, color: color}); // Clignote autant que l'étiquette
+        await Device.update(columnData.id, { mode: 0 });
+        columnAlreadyBlink.push(columnData.id); // Ajouter l'ID de la colonne à la liste pour ne pas la faire clignoter plusieurs fois
+      }
+    }
+
     // Faire clignoter toutes les étiquettes associées au produit pendant 90 secondes
-    const results = await Promise.all(
-      devices.map(device => {
-        if (device.mac) {
-          return MinewService.blinkTag(device.mac, {
-            total: 90,      // 90 clignotements
-            color: "magenta"
-          });
-        } else {
-          return null;
-        }
-      })
-    );
+    for (const device of devices) {
+      if (!device.mac) {
+        return res.status(400).json({ error: `Device with ID ${device.id} has no MAC address` });
+      }
+
+      await MinewService.blinkTag(device.mac, {
+        total: total,
+        color: color
+      });
+    }
 
     res.json({
       success: true,
       message: "Blink commands sent successfully to all associated devices",
       devices: devices.map(Device.format),
-      results: results
+      results: []
     });
   } catch (error) {
     console.error("Error blinking devices for product:", error);
