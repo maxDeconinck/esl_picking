@@ -155,7 +155,7 @@ class Device {
         fields.push("de_serial = ?");
         values.push(serial);
       }
-      if (size !== undefined) {
+      if (size !== undefined && size !== null) {
         fields.push("de_size = ?");
         values.push(size.trim());
       }
