@@ -283,6 +283,37 @@ class DolibarrAPI {
       throw error;
     }
   }
+
+  /**
+   * 
+   * Récuopérer les produits associés à une réception spécifique
+   * @param {*} receptionId 
+   * @returns 
+   */
+  async getReceptionInfos(receptionId) {
+    try {
+      const query = `
+        SELECT fk_product AS product_id
+        FROM ${this.tablePrefix}receptiondet_batch
+        WHERE fk_reception = ?
+      `;
+      
+      const rows = await this.executeQuery(query, [receptionId]);
+      
+      if (rows.length === 0) {
+        throw new Error(`Reception ${receptionId} not found`);
+      }
+      
+      const reception = rows[0];
+      
+      return rows.map(row => ({
+        product_id: row.product_id
+      }));
+    } catch (error) {
+      logger.error(`Failed to fetch reception infos for ${receptionId}`, { error: error.message });
+      throw error;
+    }
+  }
 }
 
 // Export une instance unique (singleton)

@@ -408,4 +408,59 @@ router.get('/check-stuck-pickings', async (req, res) => {
   }
 });
 
+
+/** 
+ * GET /cron/update-screens-after-reception
+ * Mettre à jour une liste d'étiquettes en mode picking ou inventaire pour s'assurer que les informations affichées sont correctes. Utile si des informations ont été modifiées dans Dolibarr et qu'on veut que les étiquettes reflètent ces changements.
+ */
+router.get('/update-screens-after-reception', async (req, res) => {
+  try {
+    // Lancer la mise à jour en arrière-plan et retourner immédiatement
+    (async () => {
+      try {
+        const idReception = req.query.id_reception;
+        if (!idReception) {
+          console.error("Missing id_reception parameter");
+          return;
+        }
+
+        // On récupère la liste des étiquettes associées à cette réception
+        const idProducts = await DolibarrAPI.getReceptionInfos(idReception);
+        console.log(idProducts);
+
+        for (const idProduct of idProducts) {
+          const devices = await Device.findByProductId(idProduct.product_id);
+          if(!devices || devices.length === 0) {
+            console.warn(`No devices found for product ${idProduct.product_id} in reception ${idReception}`);
+            continue;
+          }
+          for (const device of devices) {
+            const result = await Global.refreshESL(device.id);
+            if (result.error) {
+              console.error(`Error refreshing ESL for device ${device.id}:`, result.error);
+            } else {
+              console.log(`✅ Refreshed ESL for device ${device.id}`);
+            }
+            await new Promise(resolve => setTimeout(resolve, 300)); // Petite pause pour éviter de surcharger le serveur ou Minew
+          }
+        }
+
+        console.log(`🎉 Background update completed for reception ${idReception}`);
+      } catch (backgroundError) {
+        console.error("Background update error:", backgroundError);
+      }
+    })();
+
+    // Retourner immédiatement
+    res.json({
+      success: true,
+      message: "Background update launched. Check server logs for progress.",
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Error starting background update:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
 export default router;
