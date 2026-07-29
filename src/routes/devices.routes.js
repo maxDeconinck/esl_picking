@@ -557,6 +557,7 @@ router.post("/:id/update-screen-manual", async (req, res) => {
       stock: stockToDisplay,
       ref: product.ref,
       mode: 'Disponible',
+      price: product.price,
       qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
     });
 
@@ -662,6 +663,7 @@ router.post("/:id/update-screen", async (req, res) => {
       emplacement: device.emplacement,
       stock: stockToDisplay,
       ref: product.ref,
+      price: product.price,
       qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
     });
 

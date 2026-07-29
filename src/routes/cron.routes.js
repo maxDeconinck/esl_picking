@@ -200,6 +200,7 @@ router.get('/update-all-screens', async (req, res) => {
                   emplacement: device.emplacement,
                   stock: stockToDisplay,
                   ref: product.ref,
+                  price: product.price,
                   qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
                 });
               
@@ -430,6 +431,7 @@ router.get('/check-stuck-pickings', async (req, res) => {
               emplacement: device.emplacement,
               stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
               ref: product.ref,
+              price: product.price,
               qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
           });
 

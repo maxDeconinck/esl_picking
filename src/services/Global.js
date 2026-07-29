@@ -107,6 +107,7 @@ class Global {
         stock: stockDisplay, // Afficher la quantité demandée / quantité totale disponible
         ref: line.product_details.ref,
         mode: 'A prélever',
+        price: line.product_details.price,
         qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${line.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
         color: 7,
         total: 900,
