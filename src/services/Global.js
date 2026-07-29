@@ -247,6 +247,8 @@ class Global {
         idData: device.fk_product + '-' + device.emplacement // On utilise le même identifiant que pour addGoodsToStore pour que Minew puisse faire le lien entre les données et l'étiquette
       });
     }, 5000); // On attend 5 secondes pour être sûr que les données ont été ajoutées dans Minew avant d'envoyer la commande d'affichage
+
+    return { success: true };
   }
 }
 
