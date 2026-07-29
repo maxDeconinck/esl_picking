@@ -38,7 +38,28 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
         const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
         if(stock && stock.length > 0 && stock[0].product_id) {
           console.warn(`Device ${device.id} has no product but has location ${device.emplacement}. Found product ${stock[0].product_id} in stock. Updating...`);
+          
+          await MinewService.addGoodsToStore({
+              productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
+              lot: numLot,
+              name: product.label,
+              quantity: 0,
+              emplacement: device.emplacement,
+              stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
+              ref: product.ref,
+              price: product.price,
+              qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
+          });
+
+          // On envoie la commande à l'étiquette pour mettre à jour son affichage
+          await MinewService.changeTagDisplay(device.mac, {
+              idData: device.fk_product + '-' + device.emplacement, // Id utilisé dans le template pour afficher les bonnes infos
+              mode: "inventory", // Choix du template selon le mode de l'étiquette
+              device: device
+          });
+
           await Device.update(device.id, { fk_product: stock[0].product_id });
+
         } else {
           console.warn(`Device ${device.id} has no product and no valid product found at location ${device.emplacement}`);
         }
