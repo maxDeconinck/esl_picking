@@ -196,6 +196,7 @@ class Minew {
         data.stock = data.stock.toFixed(2)
       }
     }
+    
     let payload = {
       id: data.productId,
       storeId: this.storeId,
@@ -209,6 +210,8 @@ class Minew {
       mode : data.mode || "Disponible",
       qrcode: data.qrcode
     }
+
+    console.log('MinewService: addGoodsToStore payload', payload)
     try {
       // Remove DATA before insert
       const resDelete = await axios.post(`${this.baseUrl.replace(/\/$/, '')}/apis/esl/goods/batchDelete`, {
