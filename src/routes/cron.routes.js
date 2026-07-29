@@ -33,6 +33,16 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
           }
         }
       }
+      if(!device.fk_product && device.emplacement) {
+        // Si l'étiquette n'a pas de produit associé mais a un emplacement, on peut essayer de récupérer le produit depuis Dolibarr
+        const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
+        if(stock && stock.length > 0 && stock[0].product_id) {
+          console.warn(`Device ${device.id} has no product but has location ${device.emplacement}. Found product ${stock[0].product_id} in stock. Updating...`);
+          await Device.update(device.id, { fk_product: stock[0].product_id });
+        } else {
+          console.warn(`Device ${device.id} has no product and no valid product found at location ${device.emplacement}`);
+        }
+      }
     }
 
     res.json({

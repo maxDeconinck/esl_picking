@@ -204,6 +204,7 @@ class Minew {
       quantity: data.quantity,
       specification: data.emplacement,
       stock: data.stock,
+      price: data.price,
       ref: data.ref,
       mode : data.mode || "Disponible",
       qrcode: data.qrcode
@@ -264,6 +265,7 @@ class Minew {
       specification: data.emplacement,
       stock: data.stock,
       ref: data.ref,
+      price: data.price,
       qrcode: data.qrcode,
       mode : data.mode || "Disponible"
     }
@@ -308,6 +310,7 @@ class Minew {
         quantity: data.quantity,
         specification: data.emplacement,
         stock: data.stock,
+        price: data.price,
         ref: data.ref,
         qrcode: data.qrcode,
         mode : data.mode
