@@ -480,16 +480,16 @@ router.post("/:id/mode", async (req, res) => {
 router.post("/:id/update-screen-manual", async (req, res) => {
   try {
     const deviceId = parseInt(req.params.id, 10);
-    const result = await Global.updateDeviceScreen(deviceId);
+    const result = await Global.refreshESL(deviceId);
 
     if (result.error) {
       return res.status(400).json({ error: result.error });
     }
-    
+
     res.json({
       success: true,
       message: "Device screen updated successfully",
-      device: Device.format(device)
+      device: Device.format(await Device.findById(deviceId))
     });
   } catch (error) {
     console.error("Error updating device screen:", error);
