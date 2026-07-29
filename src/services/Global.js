@@ -1,6 +1,7 @@
 import Picking from "../models/Picking.js";
 import Minew from "../services/Minew.js";
 import Device from "../models/Device.js";
+import DolibarrAPI from "../services/DolibarrAPI.js";
 class Global {
 
   /**
@@ -152,6 +153,100 @@ class Global {
     });
 
     return base.map(b => b.short);
+  }
+
+  /** 
+   * 
+   * Refresh ESL
+  **/
+
+  static async refreshESL(deviceId) {
+    const device = await Device.findById(deviceId);
+
+    if (!device) {
+      return ({ error: "Device not found" });
+    }
+
+    if (!device.mac) {
+      return ({ error: "Device has no MAC address" });
+    }
+
+    if (!device.fk_product && device.emplacement) {
+      await Minew.addGoodsToStore({
+        productId: 'temp-' + device.emplacement,
+        emplacement: device.emplacement
+      });
+
+      // On associe à l'étiquette le template "no_product" pour indiquer qu'aucun produit n'est associé à l'étiquette et on arrête le processus de mise à jour de l'affichage
+      await Minew.changeTagDisplay(device.mac, {
+        mode: "no_product",
+        idData: 'temp-' + device.emplacement // On utilise un identifiant temporaire pour que Minew puisse faire le lien entre les données et l'étiquette
+      });
+
+      return ({ error: "Device is not associated with any product" });
+    }
+
+    if(!device.emplacement) {
+      await Minew.addGoodsToStore({
+        productId: 'temp-' + device.mac.slice(-5), // On utilise les 4 derniers caractères de l'adresse MAC pour créer un identifiant temporaire unique
+        ref: device.mac.slice(-5),
+      });
+      await Minew.changeTagDisplay(device.mac, {
+        mode: "no_data",
+        idData: 'temp-' + device.mac.slice(-5)
+      });
+
+      return ({ error: "Device has no associated emplacement" });
+    }
+
+    // On récupère les dernières informations du produit associé à l'étiquette depuis Dolibarr
+    const product = await DolibarrAPI.getProduct(device.fk_product);
+    const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
+
+    if (!stock || stock.length === 0) {
+      return ({ error: "Stock information not found for the associated product and location" });
+    }
+
+    if (!product) {
+      return ({ error: "Associated product not found" });
+    }
+
+    // On prépare les informations à afficher sur l'étiquette 
+    let stockToDisplay = stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total;
+    if(stockToDisplay && stockToDisplay % 1 !== 0) {
+      stockToDisplay = stockToDisplay.toFixed(2); // Afficher 2 décimales si la quantité n'est pas un entier
+    }
+
+    let numLot = stock[0].batch_number || "N/A";
+    if(device.serial === 'serial'){
+      numLot = ''; // Si le produit est en mode "serial", on n'affiche pas le numéro de lot mais les numéros de séries des produits à la place
+      // Si le produit est en mode "serial", on affiche les numéro de séries des produits à la place du numéro de lot
+      numLot = await this.formatLots(stock.map(s => s.batch_number));
+      // Convertion en string si numLot est un tableau (cas où il y a plusieurs numéros de série à afficher), en séparant les numéros de série par " | "
+      if(Array.isArray(numLot)) {
+        numLot = numLot.join(" | ");
+      }
+    }
+
+    await Minew.addGoodsToStore({
+      productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
+      lot: numLot,
+      name: product.label,
+      quantity: 0,
+      emplacement: device.emplacement,
+      stock: stockToDisplay,
+      ref: product.ref,
+      mode: 'Disponible',
+      price: product.price,
+      qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`,
+    });
+
+    setTimeout(async () => {
+      await Minew.changeTagDisplay(device.mac, {
+        mode: "inventory",
+        idData: device.fk_product + '-' + device.emplacement // On utilise le même identifiant que pour addGoodsToStore pour que Minew puisse faire le lien entre les données et l'étiquette
+      });
+    }, 5000); // On attend 5 secondes pour être sûr que les données ont été ajoutées dans Minew avant d'envoyer la commande d'affichage
   }
 }
 
