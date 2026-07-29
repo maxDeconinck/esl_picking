@@ -197,6 +197,13 @@ class Minew {
       }
     }
     
+    if (typeof data.price === 'number') {
+      // Si c'est un nombre entier, on n'affiche pas les décimales, sinon on affiche avec 2 décimales
+      if (!Number.isInteger(data.price)) {
+        data.price = data.price.toFixed(2)
+      }
+    }
+    
     let payload = {
       id: data.productId,
       storeId: this.storeId,
@@ -259,6 +266,14 @@ class Minew {
         data.stock = data.stock.toFixed(2)
       }
     }
+    
+    if (typeof data.price === 'number') {
+      // Si c'est un nombre entier, on n'affiche pas les décimales, sinon on affiche avec 2 décimales
+      if (!Number.isInteger(data.price)) {
+        data.price = data.price.toFixed(2)
+      }
+    }
+    
     let payload = {
       id: data.productId,
       storeId: this.storeId,
