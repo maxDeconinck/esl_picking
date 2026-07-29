@@ -218,7 +218,6 @@ class Minew {
       qrcode: data.qrcode
     }
 
-    console.log('MinewService: addGoodsToStore payload', payload, data)
     try {
       // Remove DATA before insert
       const resDelete = await axios.post(`${this.baseUrl.replace(/\/$/, '')}/apis/esl/goods/batchDelete`, {

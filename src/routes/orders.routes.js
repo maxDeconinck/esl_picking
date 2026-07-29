@@ -100,7 +100,6 @@ router.post("/:id/picking", async (req, res) => {
       // Pour chaque produit on va chercher le device à allumé en fonction des règles métiers
       let deviceToBlink = await Global.getDeviceToBlink(line, device);
 
-      // console.log(`Device to blink for product ${line.fk_product} on order line ${line.id}:`, deviceToBlink, line.stock_locations);
       if (deviceToBlink && deviceToBlink.length > 0) {
         for (const element of deviceToBlink) {
 

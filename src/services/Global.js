@@ -116,8 +116,6 @@ class Global {
       });
     }, 100 * Math.floor(Math.random() * (25 - 6 + 1) + 9)); // Délai aléatoire entre 900 et 2500 ms pour éviter de saturer le réseau si plusieurs étiquettes doivent être mises à jour en même temps
 
-    console.log('Tag updated for device:', element.mac);
-
     // Passer l'étiquette en mode picking
     await Device.update(element.id, { mode: 0 });
   }
