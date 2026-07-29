@@ -198,10 +198,8 @@ class Minew {
     }
     
     if (typeof data.price === 'number') {
-      // Si c'est un nombre entier, on n'affiche pas les décimales, sinon on affiche avec 2 décimales
-      if (!Number.isInteger(data.price)) {
-        data.price = data.price.toFixed(2)
-      }
+      // Toujours afficher le prix avec 2 décimales et le préfixe "PU: "
+      data.price = 'PU: ' + data.price.toFixed(2)
     }
     
     let payload = {
@@ -267,10 +265,8 @@ class Minew {
     }
     
     if (typeof data.price === 'number') {
-      // Si c'est un nombre entier, on n'affiche pas les décimales, sinon on affiche avec 2 décimales
-      if (!Number.isInteger(data.price)) {
-        data.price = data.price.toFixed(2)
-      }
+      // Toujours afficher le prix avec 2 décimales et le préfixe "PU: "
+      data.price = 'PU: ' + data.price.toFixed(2)
     }
     
     let payload = {
