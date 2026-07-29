@@ -199,7 +199,7 @@ class Minew {
     
     if (typeof data.price === 'number') {
       // Toujours afficher le prix avec 2 décimales et le préfixe "PU: "
-      data.price = 'PU: ' + data.price.toFixed(2)
+      data.price = data.price.toFixed(2)
     }
     
     let payload = {
@@ -266,7 +266,7 @@ class Minew {
     
     if (typeof data.price === 'number') {
       // Toujours afficher le prix avec 2 décimales et le préfixe "PU: "
-      data.price = 'PU: ' + data.price.toFixed(2)
+      data.price = data.price.toFixed(2)
     }
     
     let payload = {
