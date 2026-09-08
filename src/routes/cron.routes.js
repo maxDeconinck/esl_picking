@@ -35,6 +35,11 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
       }
       if(!device.fk_product && device.emplacement) {
         // Si l'étiquette n'a pas de produit associé mais a un emplacement, on peut essayer de récupérer le produit depuis Dolibarr
+        const product = await DolibarrAPI.getProduct(device.fk_product);
+        if(!product) {
+          console.warn(`Product not found for device ${device.id} with product ID ${device.fk_product}, skipping...`);
+          continue;
+        }
         const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
         if(stock && stock.length > 0 && stock[0].product_id) {
           console.warn(`Device ${device.id} has no product but has location ${device.emplacement}. Found product ${stock[0].product_id} in stock. Updating...`);
@@ -49,7 +54,7 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
               numLot = numLot.join(" | ");
             }
           }
-          
+
           await MinewService.addGoodsToStore({
               productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
               lot: numLot,
