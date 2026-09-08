@@ -35,15 +35,12 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
       }
       if(!device.fk_product && device.emplacement) {
         // Si l'étiquette n'a pas de produit associé mais a un emplacement, on peut essayer de récupérer le produit depuis Dolibarr
-        const product = await DolibarrAPI.getProduct(device.fk_product);
-        if(!product) {
-          console.warn(`Product not found for device ${device.id} with product ID ${device.fk_product}, skipping...`);
-          continue;
-        }
         const stock = await DolibarrAPI.getDataByEmplacement(device.emplacement);
         if(stock && stock.length > 0 && stock[0].product_id) {
           console.warn(`Device ${device.id} has no product but has location ${device.emplacement}. Found product ${stock[0].product_id} in stock. Updating...`);
           
+          const product = await DolibarrAPI.getProduct(stock[0].product_id);
+
           let numLot = stock[0].batch_number || "N/A";
           if(device.serial === 'serial'){
             numLot = ''; // Si le produit est en mode "serial", on n'affiche pas le numéro de lot mais les numéros de séries des produits à la place
@@ -56,7 +53,7 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
           }
 
           await MinewService.addGoodsToStore({
-              productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
+              productId: stock[0].product_id + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
               lot: numLot,
               name: product.label,
               quantity: 0,
@@ -64,12 +61,12 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
               stock: stock[0].batch_number === '' ? stock[0].stock_reel : stock[0].stock_total,
               ref: product.ref,
               price: product.price,
-              qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${device.fk_product}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
+              qrcode: `https://erp.materiel-levage.com/product/stock/product.php?id=${stock[0].product_id}&id_entrepot=${stock[0].warehouse_id}&action=correction&pdluoid=${stock[0].batch_id}&token=minewStock&batch_number=${stock[0].batch_number}`
           });
 
           // On envoie la commande à l'étiquette pour mettre à jour son affichage
           await MinewService.changeTagDisplay(device.mac, {
-              idData: device.fk_product + '-' + device.emplacement, // Id utilisé dans le template pour afficher les bonnes infos
+              idData: stock[0].product_id + '-' + device.emplacement, // Id utilisé dans le template pour afficher les bonnes infos
               mode: "inventory", // Choix du template selon le mode de l'étiquette
               device: device
           });
