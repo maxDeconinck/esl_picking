@@ -39,6 +39,17 @@ router.get('/fix-id-product-emplacement', async (req, res) => {
         if(stock && stock.length > 0 && stock[0].product_id) {
           console.warn(`Device ${device.id} has no product but has location ${device.emplacement}. Found product ${stock[0].product_id} in stock. Updating...`);
           
+          let numLot = stock[0].batch_number || "N/A";
+          if(device.serial === 'serial'){
+            numLot = ''; // Si le produit est en mode "serial", on n'affiche pas le numéro de lot mais les numéros de séries des produits à la place
+            // Si le produit est en mode "serial", on affiche les numéro de séries des produits à la place du numéro de lot
+            numLot = await Global.formatLots(stock.map(s => s.batch_number));
+            // Convertion en string si numLot est un tableau (cas où il y a plusieurs numéros de série à afficher), en séparant les numéros de série par " | "
+            if(Array.isArray(numLot)) {
+              numLot = numLot.join(" | ");
+            }
+          }
+          
           await MinewService.addGoodsToStore({
               productId: device.fk_product + '-' + device.emplacement, // On peut ajouter l'emplacement pour différencier les produits s'il y en a plusieurs
               lot: numLot,
