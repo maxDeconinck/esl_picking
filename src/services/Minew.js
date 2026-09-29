@@ -406,6 +406,34 @@ class Minew {
     }
   }
 
+  async getBatteryStatusGlobal() {
+    try {
+      let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/label/battery?storeId=${this.storeId}`
+      console.log(`MinewService: getting global battery status`, url)
+      const res = await axios.get(url, {
+        headers: { Token: await this.getToken() },
+        timeout: 10000
+      })
+      const status = res.data
+      return { success: true, status };
+    } catch (error) {
+      return { error: error.message || "Failed to get global ESL battery status" };
+    }
+  }
+
+  async searchDevice(page) {
+    try {
+      let url = `${this.baseUrl.replace(/\/$/, '')}/apis/esl/label/listByStoreIdPage?type=1&page=${page.number}&size=${page.size}&storeId=${this.storeId}`
+      const res = await axios.get(url, {
+        headers: { Token: await this.getToken() },
+        timeout: 10000
+      })
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { error: error.message || "Failed to check ESL battery status" };
+    }
+  }
+
   colorNameToCode(name) {
     const colors = {
       blue: '1',

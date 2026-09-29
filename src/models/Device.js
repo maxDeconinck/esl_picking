@@ -19,6 +19,22 @@ class Device {
   }
 
   /**
+   * Compter le nombre total d'étiquettes
+   * @returns {Promise<number>}
+   */
+  static async count() {
+    try {
+      const [rows] = await pool.execute(
+        "SELECT COUNT(*) AS 'count' FROM DEVICES"
+      );
+      return rows[0].count;
+    } catch (error) {
+      console.error("Error counting devices:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Récupérer les étiquettes affectées à un produit (fk_product IS NOT NULL)
    */
   static async findAffected() {

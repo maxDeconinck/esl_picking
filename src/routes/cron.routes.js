@@ -1,3 +1,4 @@
+import Mail from '../services/Mail.js';
 import express from "express";
 import pool from "../config/database.js";
 import Device from "../models/Device.js";
@@ -475,5 +476,32 @@ router.get('/update-screens-after-reception', async (req, res) => {
     res.status(500).json({ error: error.message || "Internal server error" });
   }
 });
+
+/**
+ * GET /cron/check-esl-battery-status
+ * Retourner les étiquettes ESL dont la batterie est inférieure à 10.
+ */
+router.get('/check-esl-battery-status', async (req, res) => {
+  try {
+
+    const batteryLowDevices = await Global.checkESLBatteryStatus();
+    if (batteryLowDevices.error) {
+      throw new Error(batteryLowDevices.error);
+    }
+    const email = await Mail.sendBatteryReport(batteryLowDevices);
+    res.json({
+      success: true,
+      email,
+      statusLow: batteryLowDevices.length,
+      devices: batteryLowDevices,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error("Error checking ESL battery status:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
 
 export default router;

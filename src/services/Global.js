@@ -260,6 +260,69 @@ class Global {
 
     return { success: true };
   }
+
+  static async getBatteryStatusGlobal() {
+    try {
+      const status = await Minew.getBatteryStatusGlobal();
+      return { status: status };
+    } catch (error) {
+      return { error: error.message || "Failed to get global ESL battery status" };
+    }
+  }
+
+  static async checkESLBatteryStatus() {
+    try {
+      const lowBatteryDevices = [];
+      const size = 100;
+      for (let number = 1; ; number++) {
+        const result = await Minew.searchDevice({ number, size });
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        const page = result.data;
+        if (Number(page?.code) !== 200) {
+          throw new Error(page?.msg || "Minew device search failed");
+        }
+        const devices = page.items;
+        if (!Array.isArray(devices)) {
+          throw new Error("Unexpected Minew device list response");
+        }
+
+        lowBatteryDevices.push(...devices.filter(device => {
+          const battery = device.battery;
+          if (typeof battery !== "number" && typeof battery !== "string") return false;
+          if (typeof battery === "string" && battery.trim() === "") return false;
+          const level = Number(battery);
+          return Number.isFinite(level) && level >= 0 && level < 10;
+        }));
+
+        if (page.isMore !== undefined && page.isMore !== null) {
+          if (Number(page.isMore) === 0) break;
+        } else if (Number(page.totalPage) > 0) {
+          if (number >= Number(page.totalPage)) break;
+        } else {
+          throw new Error("Missing Minew pagination information");
+        }
+        if (devices.length === 0) {
+          throw new Error("Minew returned an empty page with more pages remaining");
+        }
+      }
+      const devicesWithLocation = [];
+      for (const device of lowBatteryDevices) {
+        const localDevice = device.mac ? await Device.findByMac(device.mac) : null;
+        devicesWithLocation.push({
+          id: localDevice?.id ?? null,
+          mac: device.mac,
+          emplacement: localDevice?.emplacement ?? null,
+          battery: Number(device.battery)
+        });
+      }
+      return devicesWithLocation;
+    } catch (error) {
+      return { error: error.message || "Failed to check ESL battery status" };
+    }
+  }
 }
 
 export default Global;
