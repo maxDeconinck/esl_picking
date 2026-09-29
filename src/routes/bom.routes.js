@@ -74,6 +74,8 @@ router.post("/:id/picking", async (req, res) => {
             console.log(`No stock found for product ${line.fk_product} at location ${element.emplacement}`, { stock: line.stock_locations, element });
           }
         }
+      } else {
+        logger.warn(`No device to blink found for product ${line.fk_product} in BOM ${bomId}`);
       }
     }
 
