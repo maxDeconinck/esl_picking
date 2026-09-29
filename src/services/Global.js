@@ -34,14 +34,16 @@ class Global {
         const sortedStock = line.stock_locations.sort((a, b) => new Date(a.lot_date) - new Date(b.lot_date));
       
         for(const stock of sortedStock) {
+          console.log(`Vérification du stock pour le produit ${line.fk_product} à l'emplacement ${stock.warehouse_ref}`, { stock, line });
           if(stock.batch_qty >= line.quantity) {
             // On trouve un emplacement qui a assez de quantité, on cherche le device associé à cet emplacement
             const deviceForLocation = device.find(d => d.emplacement === stock.warehouse_ref);
             if(deviceForLocation) {
               return [deviceForLocation]; // On retourne le device associé à cet emplacement
             }
+          } else {
+            console.log(`Stock insuffisant pour le produit ${line.fk_product} à l'emplacement ${stock.warehouse_ref}`, { stock: line.stock_locations, stock });          console.log(`Stock insuffisant pour le produit ${line.fk_product} à l'emplacement ${stock.warehouse_ref}`, { stock: line.stock_locations, stock });
           }
-          console.log(`Stock insuffisant pour le produit ${line.fk_product} à l'emplacement ${stock.warehouse_ref}`, { stock: line.stock_locations, stock });
         }
       }
     }
