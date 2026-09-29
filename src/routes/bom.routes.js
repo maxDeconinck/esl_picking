@@ -75,7 +75,7 @@ router.post("/:id/picking", async (req, res) => {
           }
         }
       } else {
-        logger.warn(`No device to blink found for product ${line.fk_product} in BOM ${bomId}`);
+        logger.warn(`No device to blink found for product ${line.fk_product} in BOM ${bomId}`, { line });
       }
     }
 
