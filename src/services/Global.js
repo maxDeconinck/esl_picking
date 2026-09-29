@@ -23,8 +23,16 @@ class Global {
       
       // Règle 1 : On cherche l'emplacement le plus ancien et on vérifie si il a assez de quantité
       if(line.stock_locations && line.stock_locations.length > 0) {
+        // On verifie que chaque emplacement a bien une date d'entrée en stock avant de trier sinon on lui affecte la date du jour
+        line.stock_locations.forEach(s => {
+          if(!s.lot_date) {
+            s.lot_date = new Date().toISOString();
+          }
+        });
+        
         // Trier les emplacements par date d'entrée en stock (du plus ancien au plus récent)
         const sortedStock = line.stock_locations.sort((a, b) => new Date(a.lot_date) - new Date(b.lot_date));
+      
         
         for(const stock of sortedStock) {
           if(stock.batch_qty >= line.quantity) {
