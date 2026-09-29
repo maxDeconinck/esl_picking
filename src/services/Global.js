@@ -29,11 +29,10 @@ class Global {
             s.lot_date = new Date().toISOString();
           }
         });
-        
+
         // Trier les emplacements par date d'entrée en stock (du plus ancien au plus récent)
         const sortedStock = line.stock_locations.sort((a, b) => new Date(a.lot_date) - new Date(b.lot_date));
       
-        
         for(const stock of sortedStock) {
           if(stock.batch_qty >= line.quantity) {
             // On trouve un emplacement qui a assez de quantité, on cherche le device associé à cet emplacement
@@ -42,6 +41,7 @@ class Global {
               return [deviceForLocation]; // On retourne le device associé à cet emplacement
             }
           }
+          console.log(`Stock insuffisant pour le produit ${line.fk_product} à l'emplacement ${stock.warehouse_ref}`, { stock: line.stock_locations, stock });
         }
       }
     }
